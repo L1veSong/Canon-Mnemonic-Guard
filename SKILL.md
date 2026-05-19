@@ -1,5 +1,5 @@
 ---
-name: hermes-self-reflection
+name: hermes-canon-mnemonic-guard
 description: 自省引擎 — Hermes 错题本+免疫系统。用户指出一次错误，永久生效。每次行动前自动检索规则库，拦截违规行为。
 version: 2.2.0
 role: guard
@@ -11,7 +11,7 @@ author: L1veSong
 license: MIT
 ---
 
-# Hermes 自省引擎 v2.2.0
+# Hermes Canon Mnemonic Guard v2.2.0
 
 > **角色**: guard (护栏管道) | **阶段**: pre_action (每次行动前) | **位置**: 在所有执行之前
 >
@@ -465,5 +465,12 @@ v1.0.0 缺乏跨会话状态：
 
 ## 版本路线
 
-- **v2.2.0** (当前): Obsidian 结构化 + 扫盘提取 + 完整检测逻辑 + SOUL 共存 + 跨会话状态
-- **v3**: gbrain 式系统集成 — CLI `hermes reflect`，独立进程，原生管道
+### 典则线 · Canon (2.x.x) — 结构化规则存储
+- **v2.2.0** (当前): 扫盘提取 + 冲突声明
+- **v2.3.0**: 规则效果评分 — 误报标记、过期提醒
+- **v2.4.0**: 使用统计面板 — 周报、规则效果排行
+
+### 忆存线 · Mnemonic (3.x.x) — 系统级集成
+- **v3.0.0**: CLI `hermes reflect` — 查看/管理规则
+- **v3.1.0**: 独立进程 — 不依赖 Skill 加载
+- **v3.2.0**: 自动模式识别 — 高频错误自动建议规则
