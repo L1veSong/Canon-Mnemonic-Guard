@@ -1,0 +1,8 @@
+# personal runtime data (keep local)
+self-reflection/
+*.jsonl
+state.json
+
+# OS
+.DS_Store
+Thumbs.db
