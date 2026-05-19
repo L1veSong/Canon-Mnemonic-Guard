@@ -1,0 +1,23 @@
+name: 论文写作自检
+description: 论文写作任务专用，确保不遗漏学术规范
+items:
+  - id: essay_word_count
+    label: 正文是否达到要求字数?
+    check: 统计正文字数，比对用户设定的最低要求
+    action_on_fail: 标注字数不足，提示需要补充
+  - id: essay_refs
+    label: 参考文献数量是否达标?
+    check: 统计引用条目数
+    action_on_fail: 提示补充参考文献
+  - id: essay_format
+    label: 格式是否符合规范?
+    check: 检查标题层级、引用格式、段落结构
+    action_on_fail: 自动调整格式
+  - id: essay_no_fabrication
+    label: 是否有虚构的文献/数据/案例?
+    check: 核实所有引用的文献和数据的真实性
+    action_on_fail: 标注虚构内容并移除
+  - id: essay_no_ai_smell
+    label: 是否去除了 AI 生成痕迹?
+    check: 检查是否有"首先其次最后"、"总而言之"等 AI 套话
+    action_on_fail: 应用 humanizer-zh 去 AI 味

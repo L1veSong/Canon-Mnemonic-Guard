@@ -1,0 +1,8 @@
+{
+  "match_mode": "layered",
+  "load_mode": "full_preload",
+  "semantic_match": "auto",
+  "auto_solidify_threshold": 10,
+  "whitelist": [],
+  "checklists": ["default"]
+}

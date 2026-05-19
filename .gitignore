@@ -1,0 +1,6 @@
+# personal runtime data (keep local)
+self-reflection/
+
+# OS
+.DS_Store
+Thumbs.db
