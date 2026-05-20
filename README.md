@@ -1,19 +1,57 @@
-# Hermes Canon Mnemonic Guard
+# Hermes Canon Mnemonic Guard — 典则线 v2.2.6
 
 > AI 的错题本 + 免疫系统。你只需指出一次错误，它从此记住。
+>
+> **当前状态：** 仅典则线 (Canon v2.x) 已发布为独立 Skill。忆存线 (Mnemonic v3.x) 和护栏线 (Guard v4.x) 仍在规划中。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.2.0-blue)]()
+[![Version](https://img.shields.io/badge/version-2.2.7-blue)]()
+
+---
 
 ## 这是什么
 
-Hermes Canon Mnemonic Guard 是一个 Hermes Agent Skill，解决 AI Agent 的三大顽疾：
+**典则线 (Canon)** 是自省引擎的规则生产模块。它负责规则的来源、固化、存储和效果评分。
 
-| 问题 | 表现 | 解决方案 |
-|------|------|---------|
-| 🔁 **重复犯错** | 同一个错误犯三遍 | 你说"记住"，引擎写入规则库，下次自动拦截 |
-| 🧠 **健忘** | 跨会话记忆丢失 | 独立持久化存储，不依赖 memory，永不过期 |
-| 😴 **偷懒** | 跳步骤、不完整执行 | 防偷懒清单 + 分层匹配，每次行动前强制自检 |
+三大核心能力：
+
+| 能力 | 说明 |
+|------|------|
+| 🔁 **错题记忆** | 你说"记住"，引擎写入 errors.jsonl，自动去重合并为永久规则 |
+| 🧠 **跨会话持久化** | 独立存储 (`~/.hermes/self-reflection/`)，不依赖 Hermes memory，永不过期 |
+| 📊 **规则评分** | 跟踪每条规则的命中率/误报率，自动标记需调整的规则 |
+
+---
+
+## 三线架构总览
+
+```
+┌─────────────────────────────────────────────────┐
+│              自省引擎 · 三线架构                    │
+│                                                   │
+│  v2.x 典则 Canon    v3.x 忆存 Mnemonic  v4.x 护栏 Guard
+│  ✅ 已发布           📋 规划中            📋 规划中
+│  规则生产库          状态记忆层           规则执行器
+│  role: producer      role: memory         role: guard
+│  stage: anchor       stage: background    stage: pre_action
+│                                                   │
+│        ↓ 未来合并为 v5.0.0 统一引擎                │
+└─────────────────────────────────────────────────┘
+```
+
+**未来发布计划（严格独立，互不寄生）：**
+
+| 版本系列 | Skill 包名 | 时机 |
+|---------|-----------|------|
+| v2.x | `hermes-canon` — 典则线独立 Skill | ✅ 当前 |
+| v3.x | `hermes-mnemonic` — 忆存线独立 Skill | Mnemonic 规划完成时 |
+| v4.x | `hermes-guard` — 护栏线独立 Skill | Guard 规划完成时 |
+| v5.0.0 | `hermes-self-reflection-engine` — 三合一统一 Skill | 三条线各自成熟后 |
+| | **外观模式：** 对外 `role: guard`，内部子角色保留 | |
+
+> **铁律：** v3 和 v4 发布时必须作为独立 Skill 包，不与典则线混在同一 SKILL.md 中。三条线通过标准化接口联动，非文件寄生。
+
+---
 
 ## 快速开始
 
@@ -43,11 +81,13 @@ npx skills add hermes-canon-mnemonic-guard
 
 ### 规则类型
 
-| 类型 | 触发词示例 | 匹配行为 |
-|------|-----------|---------|
+| 类型 | 触发词示例 | 行为 |
+|------|-----------|------|
 | 🚫 `ban` (禁止项) | "禁止" "不要" "拦截" | 拦截，拒绝执行 |
 | ⚠️ `gap` (缺失项) | "不够" "不足" "没达标" | 自动补齐 |
 | 😴 `lazy` (偷懒项) | "跳过" "偷懒" "没做" | 追加执行 |
+
+---
 
 ## 工作原理
 
@@ -56,7 +96,7 @@ npx skills add hermes-canon-mnemonic-guard
     │
     ▼
 ┌──────────────────┐
-│  护栏管道         │ ← Self-Reflection (guard, pre_action)
+│  护栏管道         │ ← stage: pre_action
 │  精确匹配 → 语义匹配 → 清单自检
 │  ban 拦截 / gap 补齐 / lazy 追加
 └──────┬───────────┘
@@ -67,7 +107,9 @@ npx skills add hermes-canon-mnemonic-guard
 └──────────────────┘
 ```
 
-引擎作为**护栏管道**（非调度竞争者），在每次行动前强制检查规则库。采用独立存储（`~/.hermes/self-reflection/`），不与 memory、Obsidian 或其他 Skill 冲突。
+引擎作为**护栏管道**（非调度竞争者），在每次行动前强制检查规则库。采用独立存储，不与 memory、Obsidian 或其他 Skill 冲突。
+
+---
 
 ## 文件结构
 
@@ -76,8 +118,8 @@ npx skills add hermes-canon-mnemonic-guard
 ├── errors.jsonl          # 原始错误记录
 ├── patterns.json         # 匹配模式库
 ├── state.json            # 跨会话状态
-├── rules/                # Obsidian 结构化规则（可直接浏览）
-│   ├── _index.md         # 自动索引
+├── rules/                # Obsidian 结构化规则
+│   ├── _index.md         # 自动索引 + wikilinks
 │   ├── ban/              # 禁止项 (*.md)
 │   ├── gap/              # 缺失项 (*.md)
 │   └── lazy/             # 偷懒项 (*.md)
@@ -85,20 +127,24 @@ npx skills add hermes-canon-mnemonic-guard
 └── checklists/           # 防偷懒清单
 ```
 
-规则为 Obsidian 兼容的 Markdown 文件，含 YAML frontmatter（type、keywords、hit_count、tags 等），支持 wikilinks 和 Dataview 查询。
+规则为 Obsidian 兼容 Markdown，含 YAML frontmatter，支持 wikilinks 和 Dataview。
+
+---
 
 ## 配置
 
 ```json
 {
-  "match_mode": "layered",         // layered | exact_only
-  "load_mode": "full_preload",     // full_preload | on_demand | layered
-  "semantic_match": "auto",        // auto | on | off
-  "auto_solidify_threshold": 10,   // 自动固化阈值
-  "whitelist": [],                 // 白名单工具
-  "checklists": ["default"]        // 启用的防偷懒清单
+  "match_mode": "layered",
+  "load_mode": "full_preload",
+  "semantic_match": "auto",
+  "auto_solidify_threshold": 10,
+  "whitelist": [],
+  "checklists": ["default"]
 }
 ```
+
+---
 
 ## 功能一览
 
@@ -111,34 +157,36 @@ npx skills add hermes-canon-mnemonic-guard
 | Obsidian 结构化 | v2.0.0 | 每条规则独立 .md + frontmatter |
 | 跨会话状态 | v2.1.0 | state.json 持久化，会话计数 |
 | SOUL 共存策略 | v2.1.0 | 双轨制，可迁移 |
-| 防偷懒详细逻辑 | v2.1.0 | 每个检查项的具体实现方法 |
 | 扫盘提取 | v2.2.0 | 安装时自动扫描已有准则 |
-| 冲突声明 | v2.2.0 | 独立管道+独立存储，不与任何 Skill 冲突 |
+| 三线架构规划 | v2.2.x | 典则/忆存/护栏解耦设计 |
+| 角色声明制规划 | v2.2.5+ | role+stage 未来替换数字优先级 |
 
-## 与其他 Skill 的关系
+---
 
-| Skill 类型 | 关系 |
-|-----------|------|
-| 存储类 (Obsidian, memory) | 互不干扰 — 各写各的目录 |
-| 准则类 (其他规则 skill) | 互补 — 并行生效，重叠时 Self-Reflection 优先 |
-| 调度类 (Idea Foundry) | 上下游 — 护栏优先于规划 |
-| 执行类 | 监督—被监督 — 每次行动前检查 |
+## 配套 Skill（推荐，非必需）
+
+| Skill | 分工 | 协同 |
+|-------|------|------|
+| `karpathy-coding-guidelines` | 进攻型行为准则 | Guard 防守 + Karpathy 进攻 = 攻守兼备 |
+| `ralph-loop` | 执行闭环 | Guard 拦截 → Ralph 闭环验证 |
+| `obsidian` | 结构化存储 | rules/ 目录 Obsidian 原生兼容 |
+
+---
 
 ## 版本路线
 
-### 典则线 · Canon (2.x.x) — 结构化规则存储
-- **v2.2.0** (当前): 扫盘提取 + 冲突声明 + 跨会话状态 + SOUL 共存
-- **v2.3.0**: 规则效果评分 — 误报标记、过期提醒
-- **v2.4.0**: 使用统计面板 — 周报、规则效果排行
+详见 [SKILL.md](./SKILL.md) 的「版本路线」章节和 [CHANGELOG.md](./CHANGELOG.md)。
 
-### 忆存线 · Mnemonic (3.x.x) — 系统级集成
-- **v3.0.0**: CLI `hermes reflect` — 查看/管理规则
-- **v3.1.0**: 独立进程 — 不依赖 Skill 加载
-- **v3.2.0**: 自动模式识别 — 高频错误自动建议规则
+- **典则线 Canon (v2.x):** 规则来源、固化、扫描、效果评分 ← 当前
+- **忆存线 Mnemonic (v3.x):** 会话记忆、错误模式、自动草稿 ← 规划中
+- **护栏线 Guard (v4.x):** 前置校验、动态清单、拦截效能 ← 规划中
+- **统一引擎 (v5.0.0):** 三线合一 + 角色制统一 ← 未来
+
+---
 
 ## ☕ 支持作者
 
-如果这个项目对你有帮助，欢迎请我喝杯咖啡，你的支持会激励我持续优化迭代。完全自愿，不打赏也不影响任何功能使用。
+如果这个项目对你有帮助，欢迎请我喝杯咖啡。完全自愿。
 
 **🇨🇳 国内**
 
@@ -148,20 +196,19 @@ npx skills add hermes-canon-mnemonic-guard
 
 **🌍 International**
 
-| | |
-|---|---|
 | Recipient | J Li |
 | Bank | ERSTE BANK |
 | IBAN | AT41 2011 1845 3888 8800 |
 | BIC / SWIFT | GIBAATWWXXX |
 
+---
+
 ## 💡 建议与反馈
 
-有 Bug？[点此提交](https://github.com/L1veSong/hermes-canon-mnemonic-guard/issues/new?template=bug_report.md)
+- 有 Bug？[提交 Issue](https://github.com/L1veSong/hermes-canon-mnemonic-guard/issues/new?template=bug_report.md)
+- 有想法？[提交 Feature Request](https://github.com/L1veSong/hermes-canon-mnemonic-guard/issues/new?template=feature_request.md)
 
-有想法？[点此提交](https://github.com/L1veSong/hermes-canon-mnemonic-guard/issues/new?template=feature_request.md)
-
-我会认真阅读每一条反馈，择优纳入后续版本迭代。
+---
 
 ## License
 
