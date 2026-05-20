@@ -1,6 +1,39 @@
 # Changelog
 
-All notable changes to Hermes Canon Mnemonic Guard (原 hermes-self-reflection).
+All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
+
+---
+
+## [2.2.9] — 2026-05-21
+
+### 扫盘提取 + 固化（真实运行数据）
+- 首次完整执行扫盘提取：4 个源（SOUL.md / Obsidian 铁则库 / Memory / 其他 Skill）
+- 发现 15 条准则 → 自动分类：8 禁止 (ban) / 3 缺失 (gap) / 4 偷懒 (lazy)
+- 固化引擎写入 rules/ 目录（每条独立 .md + frontmatter）
+- errors.jsonl: 15 条原始记录
+- patterns.json: 3 类模式（ban/gap/lazy），39 个关键词
+- state.json: 初始化完成（total_errors: 15, total_rules: 15）
+- _index.md: wikilinks 索引自动生成
+
+### 典则线 v2.x 功能闭环
+- 扫盘提取 → 用户确认 → 固化写入 → 注入系统提示 完整链路验证通过
+- 典则线正式达到「设计+实施」双竣工状态
+- 下一步：v2.3.0 依赖解耦
+
+---
+
+## [2.2.8] — 2026-05-21
+
+### Added
+- 推荐列表三线分列：典则线（obsidian）、护栏线（ralph-loop / verification-before-completion / diagnose）、行为准则（karpathy-coding-guidelines）
+- `references/companion-skills-research.md`：14 候选 → 6 通过 → 8 否决的完整调研报告
+- 零配置安装标准：所有推荐必须满足 `npx skills add --yes --global` 一键安装
+
+### Fixed
+- obsidian 从忆存线归位至典则线（rules/ 目录原生浏览器，由 Canon 生产）
+
+### Changed
+- 流水线图改为三线分层架构（典则 → 护栏 → 全栈覆盖）
 
 ---
 
@@ -102,7 +135,7 @@ All notable changes to Hermes Canon Mnemonic Guard (原 hermes-self-reflection).
 - 三层加载模式（full_preload / on_demand / layered）
 
 ### Changed
-- Skill 重命名：`hermes-self-reflection` → `hermes-canon-mnemonic-guard`
+- Skill 重命名：`hermes-self-reflection` → `hermes-canon-mnemonic-guard`（v2.2.9 再精简为 `canon-mnemonic-guard`）
 - 规则存储从单文件 rules.permanent.md → rules/ 目录
 
 ### Deprecated

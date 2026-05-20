@@ -1,11 +1,11 @@
-# Hermes Canon Mnemonic Guard — 典则线 v2.2.6
+# Canon Mnemonic Guard — 典则线 v2.2.9
 
 > AI 的错题本 + 免疫系统。你只需指出一次错误，它从此记住。
 >
 > **当前状态：** 仅典则线 (Canon v2.x) 已发布为独立 Skill。忆存线 (Mnemonic v3.x) 和护栏线 (Guard v4.x) 仍在规划中。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.2.7-blue)]()
+[![Version](https://img.shields.io/badge/version-2.2.9-blue)]()
 
 ---
 
@@ -43,10 +43,10 @@
 
 | 版本系列 | Skill 包名 | 时机 |
 |---------|-----------|------|
-| v2.x | `hermes-canon` — 典则线独立 Skill | ✅ 当前 |
-| v3.x | `hermes-mnemonic` — 忆存线独立 Skill | Mnemonic 规划完成时 |
-| v4.x | `hermes-guard` — 护栏线独立 Skill | Guard 规划完成时 |
-| v5.0.0 | `hermes-self-reflection-engine` — 三合一统一 Skill | 三条线各自成熟后 |
+| v2.x | `canon` — 典则线独立 Skill | ✅ 当前 |
+| v3.x | `mnemonic` — 忆存线独立 Skill | Mnemonic 规划完成时 |
+| v4.x | `guard` — 护栏线独立 Skill | Guard 规划完成时 |
+| v5.0.0 | `self-reflection-engine` — 三合一统一 Skill | 三条线各自成熟后 |
 | | **外观模式：** 对外 `role: guard`，内部子角色保留 | |
 
 > **铁律：** v3 和 v4 发布时必须作为独立 Skill 包，不与典则线混在同一 SKILL.md 中。三条线通过标准化接口联动，非文件寄生。
@@ -58,7 +58,7 @@
 ### 安装
 
 ```bash
-npx skills add hermes-canon-mnemonic-guard
+npx skills add canon-mnemonic-guard
 ```
 
 安装时自动扫描 SOUL.md、Obsidian 铁则库等已有规则源，提取准则类内容。
@@ -205,10 +205,10 @@ npx skills add hermes-canon-mnemonic-guard
 
 ## 💡 建议与反馈
 
-- 有 Bug？[提交 Issue](https://github.com/L1veSong/hermes-canon-mnemonic-guard/issues/new?template=bug_report.md)
-- 有想法？[提交 Feature Request](https://github.com/L1veSong/hermes-canon-mnemonic-guard/issues/new?template=feature_request.md)
+- 有 Bug？[提交 Issue](https://github.com/L1veSong/Canon-Mnemonic-Guard/issues/new?template=bug_report.md)
+- 有想法？[提交 Feature Request](https://github.com/L1veSong/Canon-Mnemonic-Guard/issues/new?template=feature_request.md)
 
----
+我会认真阅读每一条反馈，择优纳入后续版本迭代。
 
 ## License
 
