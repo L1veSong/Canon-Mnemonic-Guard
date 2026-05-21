@@ -32,7 +32,9 @@
 | `karpathy-coding-guidelines` | Skill | 行为准则 | ❌ | ❌ |
 | `memory` (Hermes 内置) | 内置 | 跨会话记忆 | ❌ | ❌ |
 
-**集成模式：全部添加式（CMG 只读，第三方完全不受影响）**
+**集成模式：全部添加式（CMG 只读，第三方完全不受影响）。准入标准经历关键修正：从「第三方必须零配置安装」→「CMG 能否自动感知并调用」。第三方好不好装与 CMG 无关。**
+
+**三线分列（三省引擎口径）：** 典则线(暂无专属) / 护栏线(ralph-loop, VBC, diagnose) / 成本优化(rtk-hermes) / 规则扩展(plur, v2.3.0) / 跨线共享(obsidian) / 行为准则(karpathy) / 内置(memory)
 
 ### 新增：调度联动
 
