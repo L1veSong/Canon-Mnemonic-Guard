@@ -29,7 +29,7 @@
 | `plur` | MCP 服务器 | 扩展规则来源（v2.3.0） | ❌ | ❌ |
 | `obsidian` | Skill | rules/ 可视化 | ❌ | ❌ |
 | `karpathy-coding-guidelines` | Skill | 行为准则 | ❌ | ❌ |
-| `memory` (Hermes 内置) | 内置 | 跨会话记忆 | ❌ | ❌ |
+| `hermes-agent-skill-authoring` | Skill | 发布流程风控 | ❌ | ❌ |
 
 **集成模式：全部添加式（CMG 只读，第三方完全不受影响）。准入标准经历关键修正：从「第三方必须零配置安装」→「CMG 能否自动感知并调用」。第三方好不好装与 CMG 无关。**
 

@@ -16,8 +16,8 @@
 | 线路 | 版本 | 定位 | 一句话 |
 |------|------|------|--------|
 | **典则线** Canon | v2.4.1 | 规则生产库 | 你说「记住」→ 写入规则 → 去重固化 |
-| **护栏线** Guard | v4.3.0 | 规则执行器 | 五层拦截 → 动态清单 → 上下文感知 |
-| **忆存线** Mnemonic | v3.1.0 | 状态记忆层 | 读拦截日志 → 自动模式识别 → 推送规则草稿 |
+| **护栏线** Guard | v4.4.0 | 规则执行器 | 五层拦截 → 动态清单 → 上下文感知 |
+| **忆存线** Mnemonic | v3.2.0 | 状态记忆层 | 读拦截日志 → 自动模式识别 → 推送规则草稿 |
 
 **三线联动：** Canon 生产规则 → Guard 执行拦截 → Mnemonic 识别模式 → Canon 固化升级
 
@@ -45,6 +45,14 @@
 
 ```bash
 npx skills add canon-mnemonic-guard --yes --global
+```
+
+各线也可独立安装：
+
+```bash
+npx skills add canon --yes --global
+npx skills add guard --yes --global
+npx skills add mnemonic --yes --global
 ```
 
 三模块也可独立安装：
@@ -88,8 +96,8 @@ npx skills add mnemonic --yes --global
 | 五层拦截器 | Guard v4.0 |
 | 动态清单生成 | Guard v4.1 |
 | 拦截效能分析 | Guard v4.2 |
-| 上下文感知拦截 | Guard v4.3 |
-| 自动模式识别 | Mnemonic v3.1 |
+| 上下文感知拦截 | Guard v4.4 |
+| 自动模式识别 | Mnemonic v3.2 |
 
 ---
 
