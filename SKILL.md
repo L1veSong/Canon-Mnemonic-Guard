@@ -1,7 +1,7 @@
 ---
 name: canon-mnemonic-guard
 description: 自省引擎典则线 (Canon) — 规则生产库。负责规则来源、固化、存储、效果评分。纯静态规则层。
-version: 2.2.9
+version: 2.3.0
 role: guard
 stage: pre_action
 dependencies: []
@@ -11,7 +11,7 @@ author: L1veSong
 license: MIT
 ---
 
-# Canon Mnemonic Guard v2.2.9
+# Canon Mnemonic Guard v2.3.0
 
 > **角色**: guard (护栏管道) | **阶段**: pre_action (每次行动前) | **位置**: 在所有执行之前
 >
@@ -23,7 +23,7 @@ license: MIT
 
 | 版本 | 变更 |
 |------|------|
-| v2.2.9 | + 首次真实扫盘提取+固化执行(15条/4源/8ban+3gap+4lazy) / + rules/目录+errors.jsonl+patterns.json+state.json全部实装 / 典则线v2.x功能闭环 |
+| v2.3.0 | + 依赖解耦: RuleReader接口+7个适配器(JSON/SOUL/Obsidian/Memory/Skill/Plur/Custom) / + 可配置扫描源(config.json) / + 模式切换(expert/simple) / + PlurRuleSource / + 扫描源白名单制 |
 | v2.2.8 | + 三线分列推荐列表（典则/护栏/行为准则） / + companion-skills-research.md 增强包调研报告（14评估/6通过/8否决） / + obsidian 归位典则线 / + 全部推荐满足零配置标准 |
 | v2.2.3 | + 角色声明制: 废除数字优先级(priority:110→role+stage) / + 声明式层级替换数字排序 / + 冲突声明表改为stage驱动 / + 流水线图改为stage自然排列 |
 | v2.2.2 | + 设计哲学: 彻底解耦·物理拆分·单向依赖 / + 三线职责边界严格定义 / + v5.0.0 架构预览 / + 设计参考（gstack/Ports&Adapters/Microkernel） |
@@ -100,7 +100,7 @@ tags: [分类标签]
 **注入格式:**
 ```
 ═══════════════════════════════════════
-自省引擎 v2.2.9 · 永久规则 (自动注入)
+自省引擎 v2.3.0 · 永久规则 (自动注入)
 ═══════════════════════════════════════
 [从 rules/_index.md 的表格 + 各规则的 frontmatter 摘要]
 ═══════════════════════════════════════
@@ -140,7 +140,7 @@ tags: [分类标签]
 
 ### 6. 输出激活状态
 
-**必须输出**: "自省引擎 v2.2.9 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。上次固化: {日期}。跨会话 # {N}。"
+**必须输出**: "自省引擎 v2.3.0 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。上次固化: {日期}。跨会话 # {N}。模式: {expert/simple}。"
 
 ---
 
@@ -474,16 +474,48 @@ v1.0.0 缺乏跨会话状态：
 - 三条线只在 v5.0.0 合并为一个统一引擎包
 - 详见 `references/future-release-plan.md`
 
-### 坑点 5: 配套 Skill 推荐必须零配置准入验证
+### 坑点 5: 推荐标准是 CMG 自动感知调用，非第三方安装难度
 
-推荐列表不是愿望清单。每条推荐必须经过实操验证——`npx skills add --yes --global` 一键安装成功才算数。评估标准：
+推荐列表不是愿望清单。准入标准是 **CMG 能否自动感知并调用**，不是第三方好不好装：
 
-1. SKILL.md 格式 → 否则不是 skill（可能是 pip 包/TypeScript 项目/MCP 服务器）
-2. 零配置 → 不需要 Docker/server/env/`hermes config set`
-3. Hermes 原生兼容 → 不依赖 Claude Code 特有功能
-4. 协同明确 → 与 Guard 有清晰互补，非功能重叠
+1. 自动感知 — 标准安装后，CMG 无需额外配置即可发现该 skill
+2. 零适配调用 — CMG 的 checklist/扫盘/拦截逻辑可直接触发该 skill
+3. 互补非重叠 — 该 skill 提供 CMG 不具备的能力
 
-详见 `references/companion-skills-research.md` 和 `skill-installation-guide` 的 `references/companion-skill-evaluation.md`。
+第三方 skill 的安装难度（npm/pip/cargo/docker）与 CMG 无关——那是用户自己负责装上的事。CMG 只关心：装上后能不能联动。
+
+详见 `references/companion-skills-research.md`。
+
+### 坑点 6: 不可凭类型推断冲突，必须验证实际交互路径
+
+分析某个第三方工具是否与 CMG 冲突时，**不能凭"它是什么类型"推断风险**。
+
+- ❌ 错误：plur 是 MemoryProvider 插件 → 它会拦截 Hermes memory → CMG 扫盘会读到脏数据
+- ✅ 正确：plur 实际是 TypeScript MCP 服务器，独立进程，数据存 `~/.plur/`，与 Hermes memory 完全隔离。CMG 扫盘默认不扫 `~/.plur/`，不存在冲突
+- 教训：必须阅读实际代码/架构再下冲突结论，不可凭名称或分类推断
+
+### 坑点 6: 推荐 Skill 归属不能单线强制
+
+某些 Skill 天然服务多条线——强行归入任一条线都会在后续发现它其实也服务另一条，造成反复横跳。
+
+**本 Skill 实战案例：** obsidian 先被归入典则线（可视化 rules/*.md），后发现它也能检索忆存线的 errors.jsonl/state.json。两次重分类后最终发现它本就该在「跨线共享」。
+
+**正确做法：**
+- 当一个 Skill 经过 2 次以上归属调整仍无法稳定 → 它很可能就是跨线共享
+- 新增「跨线共享」分类，明确标注服务哪些线
+- 不要为了整齐而强行归入单线——不准确的分类比多一个分类更差
+
+### 坑点 7: 版本号变更后必须全文件同步验证
+
+版本号只改了 frontmatter 和标题，但注入消息、激活消息、README 标题、典则线当前标记、CHANGELOG 标题等散布在多处的硬编码版本号全部滞后。
+
+**本 Skill 实战案例：** v2.2.9 发布时 README 标题仍写 v2.2.6；注入消息和激活消息仍写 v2.2.3。
+
+**正确做法：** 每次版本号变更后，执行全文件 grep 验证：
+```bash
+grep -rn "v[0-9]\.[0-9]\.[0-9]" SKILL.md README.md CHANGELOG.md
+```
+确保所有出现处同步到新版本号。这是版本发布的最后一步，不可跳过。
 
 ---
 
@@ -513,41 +545,51 @@ v1.0.0 缺乏跨会话状态：
 | 调度类 (Idea Foundry) | 护栏→调度 | 自省引擎在调度之前执行（stage 声明决定，非数字优先级） |
 | 执行类 (其他所有) | 监督—被监督 | 每次行动前检查，不修改被监督 skill 行为 |
 
-### 推荐配套 Skill（非必需，装了更好）
+### 推荐配套（非必需，装了更好）
 
-自省引擎独立可用。搭配以下 skill 形成完整质量流水线。所有推荐 skill 满足：`npx skills add` 一键安装、零配置、Hermes 原生兼容。
+自省引擎独立可用。搭配以下第三方工具形成增强生态。
 
-#### 典则线推荐（规则生产）
+**核心原则：添加式集成，不融合不固化不修改。**
 
-| Skill | 分工 | 协同方式 |
-|-------|------|---------|
-| （暂无专属推荐。obsidian 见下方跨线共享。） | | |
+> CMG 只消费第三方工具的产出，绝不修改第三方工具的行为或配置。用户装不装推荐，第三方工具本身功能完全不受影响。CMG 装上后自动扫描到 → 提示用户是否启用增强集成 → 用户选「是」则 CMG 单向读取其数据 → 用户选「否」则完全无视。双向都不发生 CMG 向第三方的写入。
 
 #### 护栏线推荐（拦截执行 · 验证闭环）
 
-| Skill | 分工 | 协同方式 |
-|-------|------|---------|
-| `ralph-loop` | JSON 任务管理 + delegate_task 自主迭代 | Guard 拦截违规 → Ralph 闭环验证 |
-| `verification-before-completion` | 禁止无证据声称完成，强制运行验证命令 | Guard coding.yaml 已引用：`action_on_fail: 运行 verification-before-completion` |
-| `diagnose` | 四阶段根因调试（复现→假设→探查→修复） | Guard ban_check 反复命中同一规则 → diagnose 分析根因 → Guard 优化规则 |
+| 推荐 | 类型 | 增强点 | 集成方式 |
+|------|------|--------|---------|
+| `ralph-loop` | Skill | 执行闭环 | Guard 拦截违规后自动触发 ralph-loop 确保剩余步骤逐一闭环验证 |
+| `verification-before-completion` | Skill | 证据先于断言 | Guard coding.yaml 已引用：拦截「声称完成但未验证」→ 自动调用 |
+| `diagnose` | Skill | 根因调试 | Guard ban_check 反复命中同一规则 → 自动触发 diagnose 分析根因 → Guard 优化规则 |
 
-#### 跨线共享（同时服务多条线）
+#### 成本优化推荐
 
-| Skill | 分工 | 服务对象 |
-|-------|------|---------|
-| `obsidian` | Vault 读写、wikilinks、Dataview 查询、图谱链接 | **典则线：** rules/*.md 可视化浏览 + 全文检索 ； **忆存线：** errors.jsonl / state.json 可检索存档 |
+| 推荐 | 类型 | 增强点 | 集成方式 |
+|------|------|--------|---------|
+| `rtk-hermes` | Hermes 插件 | 压缩终端输出 60-90% token | 被动受益。rtk 压缩所有 Hermes 输出 → CMG 的 pre_action 检查自然消耗更少 token。rtk 的功能范围不受 CMG 影响 |
 
-#### 行为准则推荐（全栈覆盖）
+#### 规则扩展推荐
 
-| Skill | 分工 | 协同方式 |
-|-------|------|---------|
-| `karpathy-coding-guidelines` | 先想再写、极简、手术式改动、目标驱动 | Guard 防守 + Karpathy 进攻 = 攻守兼备 |
+| 推荐 | 类型 | 增强点 | 集成方式 |
+|------|------|--------|---------|
+| `plur` | MCP 服务器 | 扩展规则来源 | v2.3.0 可配置扫描源支持后，CMG 扫盘可纳入 `~/.plur/engrams.yaml` 中的纠正经验，作为额外规则来源 |
+
+#### 跨线共享
+
+| 推荐 | 类型 | 增强点 | 集成方式 |
+|------|------|--------|---------|
+| `obsidian` | Skill | rules/ 可视化 | **典则线：** rules/*.md 可视化浏览 + 全文检索 ； **忆存线：** errors.jsonl / state.json 可检索存档 |
+
+#### 行为准则推荐
+
+| 推荐 | 类型 | 增强点 | 集成方式 |
+|------|------|--------|---------|
+| `karpathy-coding-guidelines` | Skill | 进攻型行为准则 | Guard 防守 + Karpathy 进攻 = 攻守兼备 |
 
 #### 内置（无需安装）
 
-| 系统 | 分工 | 接入方式 |
-|------|------|---------|
-| `memory` (Hermes 内置) | 跨会话持久记忆 | Guard 扫盘提取已将其作为扫描源 |
+| 系统 | 类型 | 增强点 | 接入方式 |
+|------|------|--------|---------|
+| `memory` (Hermes 内置) | 内置 | 跨会话持久记忆 | Guard 扫盘提取已将其作为扫描源 |
 
 **流水线全景：**
 
@@ -636,67 +678,61 @@ v1.0.0 缺乏跨会话状态：
 
 > **定位：** 规则生产库。典则线仅输出标准化规则，不含任何拦截、校验、执行逻辑。
 
-**v2.2.9 (当前):** 首次真实扫盘提取+固化执行(15条/4源) / 三线分列推荐列表 / v5.0.0 外观模式决策 / 独立 Skill 包发布规划 / 增强包调研报告
+**v2.3.0 (当前):** 依赖解耦(RuleReader+7适配器) / 可配置扫描源(config.json) / 模式切换(expert/simple) / 推荐列表 / 独立 Skill 包发布规划
 
-**v2.3.0: 依赖解耦 + 可配置扫描源**
+---
 
-把「读规则」逻辑拆成接口 + 适配器：
+**v2.3.0: 依赖解耦 + 可配置扫描源（前置基建）**
+
+把「读规则」逻辑拆成接口 + 适配器。解耦后 CMG 能读取任意第三方数据源（plur、OpenClaw、外部文件），这是后续所有跨 skill 联动的基础。
 
 ```
 RuleReader 接口      ← 只管读规则，不管从哪读
   ├── JSONRuleSource        内置默认 → 零外部依赖
-  ├── SOULRuleSource        builtin，检测到 SOUL.md 才激活
+  ├── SOULRuleSource        builtin
   ├── ObsidianRuleSource    obsidian 配置驱动
-  ├── MemoryRuleSource      builtin，Hermes 热记忆
-  ├── SkillRuleSource       builtin，扫描其他 Skill 的 HARD-GATE
+  ├── MemoryRuleSource      builtin
+  ├── SkillRuleSource       builtin
+  ├── PlurRuleSource        v2.3.0 新增：读取 ~/.plur/engrams.yaml
   └── CustomRuleSource      遍历 config.json custom[] 列表
 ```
-
-适配器按需加载——检测到对应源存在才激活，没装静默跳过。
 
 **可配置扫描源（白名单制，绝不全盘扫描）：**
 
 ```json
-// ~/.hermes/self-reflection/config.json
 {
   "scan_sources": {
-    "builtin": {
-      "soul": true,        // SOUL.md 系统提示
-      "memory": true,      // Hermes 热记忆
-      "skills": true       // 其他 Skill HARD-GATE 块
-    },
-    "obsidian": {
-      "enabled": true,
-      "vault_path": "~/obsidian",
-      "rule_dirs": ["🔒 HERMES-全局铁则库"]
-    },
+    "builtin": {"soul": true, "memory": true, "skills": true},
+    "obsidian": {"enabled": true, "vault_path": "~/obsidian", "rule_dirs": ["🔒 HERMES-全局铁则库"]},
     "custom": [
-      {
-        "name": "openclaw_memory",
-        "path": "~/.openclaw/memory/",
-        "file_pattern": "*.md",
-        "enabled": true
-      }
+      {"name": "openclaw_memory", "path": "~/.openclaw/memory/", "file_pattern": "*.md", "enabled": true},
+      {"name": "plur_engrams", "path": "~/.plur/", "file_pattern": "engrams.yaml", "enabled": false}
     ]
   }
 }
 ```
 
-**设计原则：**
-- 只扫白名单路径，绝不全盘扫描（隐私风险）
-- 内置源（soul/memory/skills/obsidian）默认开启，可独立关闭
-- 自定义源由用户显式配置，默认空列表——用户不配就不扫
-- 每个源独立开关，一个源出问题不影响其他源
-- CustomRuleSource 适配器遍历 custom[] 列表，按 file_pattern 匹配文件，经过滤规则提取准则类内容
+---
 
-**v2.4.0: 规则效果评分 + 角色声明制引入**
+**Phase 1（v2.3.x）: 规则冲突机制 + 模式切换 + Idea Foundry 规则集联动**
 
-- 每条规则跟踪命中率 + 误报率 + 最后命中时间
-- 误报率 > 30% → 自动标记"待调整"
-- 180 天未命中 → 提示"是否已过时"
-- 固化报告增加规则效果排行
-- **与 Guard v4.2.0 联动：** Canon 输出规则评分 → Guard 读取后调整拦截策略
-- **角色声明制引入：** Canon 以 `role: producer, stage: system_anchor` 声明自己是规则生产锚点，输出标准化规则接口供 Guard/Mnemonic 消费。废除数字优先级，新 skill 按 stage 自动归位。
+| 任务 | 说明 |
+|------|------|
+| **规则冲突解决** | 明确指定 > 最近使用 > 更严格规则。两条 ban 规则矛盾时自动暂停 → clarify 让用户裁定 |
+| **傻瓜模式 / 专家模式** | 傻瓜模式：自动记录纠正（带「准则类」过滤器，不记录无关键词的临时纠正）→ 阈值触发固化提示。专家模式：每次记录前 clarify 确认，可编辑规则内容后写入 |
+| **Idea Foundry 规则集开关** | Idea Foundry Phase -3 增加「启用 CMG 规则集」选项。开启后 CMG 的 rules/ 作为约束注入到流水线的代码生成阶段 |
+
+---
+
+**Phase 2（v2.4.0）: 规则评分 + 角色声明制 + 工具链完善**
+
+| 任务 | 说明 |
+|------|------|
+| **规则效果评分** | 每条规则跟踪命中率/误报率/最后命中时间。误报率>30%→标记待调整，180天未命中→提示过期 |
+| **角色声明制引入** | Canon 以 `role: producer, stage: system_anchor` 声明规则生产锚点。与 Guard v4.2.0 联动：Canon 输出评分→Guard 调整拦截策略 |
+| **初始化命令** | `npx canon-mnemonic-guard init` 自动创建 rules/ 目录结构 + 示例规则 + config.json |
+| **简化触发词** | `!remember 禁止xxx` / `!solidify` / `!scan` 短触发词，与自然语言触发并行 |
+| **规则导入/导出** | `!export` 导出 rules/ 目录为 ZIP，`!import <path>` 导入外部规则集。用于分享和备份 |
 
 ---
 

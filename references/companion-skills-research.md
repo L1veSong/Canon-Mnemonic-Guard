@@ -1,63 +1,70 @@
 # 增强包调研报告
 
-对 hermes-canon-mnemonic-guard 推荐配套 Skill 的完整评估记录。
+对 canon-mnemonic-guard 推荐配套 Skill 的完整评估记录。
 
 ---
 
-## 通过（6 个）— 零配置，npx skills add 一键安装
+## 评估标准（v2.2.9 修订）
 
-| Skill | 归属线路 | 安装命令 | 协同方式 |
-|-------|---------|---------|---------|
-| `obsidian` | 典则线 | `npx skills add obsidian --yes --global` | rules/*.md 原生可视化 |
-| `ralph-loop` | 护栏线 | `npx skills add ralph-loop --yes --global` | 拦截后闭环验证 |
-| `verification-before-completion` | 护栏线 | 已内置 | Guard coding.yaml 引用 |
-| `diagnose` | 护栏线 | 已内置 | 高频拦截→根因分析 |
-| `karpathy-coding-guidelines` | 行为准则 | `npx skills add karpathy-coding-guidelines --yes --global` | 攻守兼备 |
-| `memory` (Hermes 内置) | 内置 | 无需安装 | 扫盘提取已接入 |
+**核心标准：CMG 能否自动感知并调用。** 第三方 skill 的安装难度与 CMG 无关——用户自己负责装上。CMG 只关心：装完后能不能自动识别、零适配调用。
+
+| 维度 | 标准 | 权重 |
+|------|------|------|
+| 自动感知 | 标准安装后，CMG 无需额外配置即可发现该 skill | 40% |
+| 零适配调用 | CMG 的 checklist/扫盘/拦截逻辑可直接触发该 skill | 40% |
+| 互补非重叠 | 该 skill 提供 CMG 不具备的能力，非功能重复 | 20% |
+
+> **与旧标准的区别：** 旧标准要求第三方 skill 必须 `npx skills add` 一键安装。新标准不关心第三方安装方式——那是用户的事。只要 CMG 装上后能自动感知调用，就合格。
 
 ---
 
-## 否决（8 个）— 原因记录
+## 通过（8 个）— 对 CMG 有明确增强
 
-### 非 SKILL.md skill（无法 npx skills add）
+| 推荐 | 类型 | 增强点 | CMG 写入第三方？ | 第三方行为被修改？ |
+|------|------|--------|:---:|:---:|
+| `ralph-loop` | Skill | 执行闭环 | ❌ | ❌ |
+| `verification-before-completion` | Skill | 证据先于断言 | ❌ | ❌ |
+| `diagnose` | Skill | 根因调试 | ❌ | ❌ |
+| `rtk-hermes` | Hermes 插件 | 压缩 token 60-90% | ❌ | ❌ |
+| `plur` | MCP 服务器 | 扩展规则来源（v2.3.0） | ❌ | ❌ |
+| `obsidian` | Skill | rules/ 可视化 | ❌ | ❌ |
+| `karpathy-coding-guidelines` | Skill | 行为准则 | ❌ | ❌ |
+| `memory` (Hermes 内置) | 内置 | 跨会话记忆 | ❌ | ❌ |
+
+**集成模式：全部添加式（CMG 只读，第三方完全不受影响）**
+
+---
+
+## pending（v2.3.0 后可配置源接入）
+
+| Skill | 类型 | v2.3.0 后 |
+|-------|------|----------|
+| **plur** (plur-ai/plur) | TypeScript MCP 服务器 | 用户配置 `custom: [{path: "~/.plur/", pattern: "*.yaml"}]` → CMG 扫盘可读 plur 记忆 → 固化为规则。与 Hermes 内置 memory 无冲突（独立 MCP 进程，独立存储路径）。CMG 已覆盖其核心功能（错误记忆+去重固化）。ACT-R 衰减模型有参考价值 |
+
+---
+
+## 否决（9 个）
+
+### CMG 无法自动感知 / 无调用接口
 
 | Skill | 类型 | 否决理由 |
 |-------|------|---------|
-| **MemPalace** | Python CLI + ChromaDB | pip install + mempalace init + 300MB 嵌入模型 + 独立进程。52k stars 但完全不是 skill 形态 |
-| **agentmemory (rohitg00)** | TypeScript 服务器 | 需 Node.js >= 20 + npx 启动独立服务 + Docker。14k stars 但非零配置 |
-| **MemSkill (ViktorAxelsen)** | PyTorch 训练框架 | arXiv 学术论文，需 GPU + 数据集 + PPO 训练。482 stars，完全不属于 Hermes skill 生态 |
+| **MemPalace** | Python CLI + ChromaDB | 独立向量数据库，CMG 无调用接口 |
+| **agentmemory** | TypeScript 服务器 + Docker | 独立服务，CMG 无调用接口 |
+| **MemSkill** | PyTorch 训练框架 | 学术论文，非用户工具 |
+| **CLI-Anything** | Python 方法论工具包 | 开发工具包，CMG 无调用接口。可独立使用但与 CMG 无联动 |
+| **mano-p** | GUI 视觉模型 | 需独立部署模型服务，CMG 无法调用 |
+| **shotgun_code** | Go+Vue 桌面应用 | 需编译的桌面应用，CMG 无法调用 |
 
-### MemoryProvider 插件（需改 Hermes 核心配置）
-
-| Skill | 否决理由 |
-|-------|---------|
-| **echomind_memory.skill** | cp -r 到插件目录 + hermes config set memory.provider + Python 服务常驻。非标准 skill，配置侵入 |
-| **hermes-memory-installer** | git clone + python setup.py install + systemctl + .env。名字叫"一键安装器"但自己需要四步手动配置 |
-
-### MCP 服务器依赖
+### 其他
 
 | Skill | 否决理由 |
 |-------|---------|
-| **basic-memory-skills** | 依赖 Basic Memory MCP 服务器，需要先部署 MCP 后端 |
-
-### 不存在
-
-| Skill | 否决理由 |
-|-------|---------|
-| **Diamond Memory** | 不存在于任何 AI agent skill 仓库。仅有一家硬件内存条公司叫这个名字 |
-| **skill.guard** | Hermes 内置安全扫描器（tools/skills_guard.py），非用户可安装 skill |
-
----
-
-## 评估标准
-
-所有推荐必须同时满足：
-
-1. **SKILL.md 标准格式** — 可通过 `npx skills add` 安装
-2. **零配置** — 安装后无需手动编辑配置文件、启动服务、设置环境变量
-3. **Hermes 原生兼容** — 在 Hermes Agent 中直接可用，不依赖 Claude Code 特有功能
-4. **稳定可靠** — 有维护记录，非一次性实验项目
-5. **协同明确** — 与 Canon/Guard 有清晰的互补关系，非功能完全重叠
+| **echomind_memory.skill** | MemoryProvider 插件，非标准 skill |
+| **hermes-memory-installer** | 多步手动配置，非标准 skill |
+| **basic-memory-skills** | MCP 服务器依赖 |
+| **Diamond Memory** | 不存在 |
+| **skill.guard** | Hermes 内置安全扫描器 |
 
 ---
 
@@ -65,4 +72,5 @@
 
 | 日期 | 变更 |
 |------|------|
-| 2026-05-21 | 初版：评估 14 个候选，6 通过、8 否决。三线分列推荐表 |
+| 2026-05-21 | 评估标准修订（CMG自动感知调用 > 第三方安装难度），新增 plur/CLI-Anything/mano-p/shotgun_code 评估，plur 标记为 pending |
+| 2026-05-21 | 初版：评估 14 个候选，6 通过、8 否决 |

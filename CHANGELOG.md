@@ -4,6 +4,27 @@ All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
 
 ---
 
+## [2.3.0] — 2026-05-21
+
+### 依赖解耦 + 可配置扫描源（前置基建）
+- RuleReader 接口 + 7 个适配器：JSONRuleSource / SOULRuleSource / ObsidianRuleSource / MemoryRuleSource / SkillRuleSource / PlurRuleSource / CustomRuleSource
+- 适配器按需加载，检测到对应源存在才激活，未装静默跳过
+- PlurRuleSource：v2.3.0 新增，读取 `~/.plur/engrams.yaml` 中的纠正经验作为额外规则来源
+- 可配置扫描源白名单制：`~/.hermes/self-reflection/config.json` 的 `scan_sources` 字段
+- 支持自定义源（OpenClaw、plur 等），用户不配就不扫，绝不全盘扫描
+
+### 模式切换
+- expert 模式：每次记录前 clarify 确认，可编辑规则内容后写入（默认）
+- simple 模式：自动记录纠正（带「准则类」过滤器）→ 阈值触发固化提示
+- 通过 `config.json` 的 `mode` 字段切换
+- 激活消息新增 `模式: {expert/simple}` 输出
+
+### Changed
+- 可配置扫描源取代硬编码 4 源体系
+- 典则线版本从 v2.2.9 → v2.3.0
+
+---
+
 ## [2.2.9] — 2026-05-21
 
 ### 扫盘提取 + 固化（真实运行数据）
