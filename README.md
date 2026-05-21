@@ -1,4 +1,4 @@
-# Canon Mnemonic Guard — 典则线 v2.3.0
+# Canon Mnemonic Guard — 典则线 v2.3.1
 
 > AI 的错题本 + 免疫系统。你只需指出一次错误，它从此记住。
 >
