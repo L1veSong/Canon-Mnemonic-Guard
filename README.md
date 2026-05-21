@@ -55,13 +55,6 @@ npx skills add guard --yes --global
 npx skills add mnemonic --yes --global
 ```
 
-三模块也可独立安装：
-
-```bash
-npx skills add guard --yes --global
-npx skills add mnemonic --yes --global
-```
-
 ### 使用
 
 ```
