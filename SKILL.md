@@ -1,9 +1,9 @@
 ---
-name: guard
-description: 自省引擎护栏线 (Guard) — 规则执行器。运行时读取 Canon 规则库 + Mnemonic 记忆库，独立执行 pre_action 前置拦截。纯执行校验层。
-version: 4.0.0
-role: guard
-stage: pre_action
+name: mnemonic
+description: 自省引擎忆存线 (Mnemonic) — 状态记忆层。读取 Guard 拦截日志，自动识别高频错误模式，生成规则草稿推送至 Canon 固化引擎。纯记忆状态层。
+version: 3.0.0
+role: memory
+stage: background
 dependencies: []
 min_hermes_version: any
 platforms: [linux, macos, windows]
@@ -11,11 +11,11 @@ author: L1veSong
 license: MIT
 ---
 
-# Guard 护栏线 v4.0.0
+# Mnemonic 忆存线 v3.0.0
 
-> **角色**: guard (规则执行器) | **阶段**: pre_action (每次行动前) | **位置**: Canon 之后，所有执行之前
+> **角色**: memory (状态记忆层) | **阶段**: background (后台常驻) | **位置**: Guard 之后，Canon 之前
 >
-> 从 Canon Mnemonic Guard v2.4.1 剥离。读取 Canon 的 rules/ 目录作为规则源，读取 Mnemonic 的 state.json 感知上下文。
+> 读取 Guard 的 intercept_log.jsonl 和 state.json，自动识别高频错误模式，推送规则草稿至 Canon 固化引擎。不生产规则、不执行拦截。
 
 ---
 
@@ -23,11 +23,10 @@ license: MIT
 
 ```
 ~/.hermes/self-reflection/
-├── intercept_log.jsonl      # 拦截日志 (Guard 写入)
-├── rules/                   # 规则库 (Canon 生产，Guard 读取)
-├── state.json               # 跨会话状态 (Mnemonic 生产，Guard 读取)
-├── errors.jsonl             # 原始错误记录 (Canon 写入)
-├── patterns.json            # 匹配模式库 (Canon 维护)
+├── intercept_log.jsonl      # 拦截日志 (Guard 写入，Mnemonic 读取)
+├── state.json               # 跨会话状态 (Mnemonic 维护)
+├── errors.jsonl             # 原始错误记录 (Canon 写入，Mnemonic 读取)
+├── rules/                   # 规则库 (Canon 生产)
 └── config.json              # 用户配置
 ```
 
@@ -35,94 +34,87 @@ license: MIT
 
 ## 启动时（Skill 加载）
 
-### 1. 加载 Canon 规则库
+### 1. 读取 Guard 拦截日志
 
-读取 `~/.hermes/self-reflection/rules/` 目录，遍历 ban/gap/lazy 三类规则，解析 frontmatter 中的 type、keywords、tags，构建拦截匹配表。
+加载 `~/.hermes/self-reflection/intercept_log.jsonl`，统计最近 7 天拦截事件。按关键词分组，计算出现频次。
 
-### 2. 加载 Mnemonic 状态
+### 2. 读取状态
 
-读取 `~/.hermes/self-reflection/state.json`，获取跨会话状态（会话计数、引擎健康指标、上下文豁免标记）。
+加载 `~/.hermes/self-reflection/state.json`，获取会话计数和引擎健康指标。
 
-### 3. 初始化拦截日志
+### 3. 输出激活状态
 
-如 `~/.hermes/self-reflection/intercept_log.jsonl` 不存在则创建。
-
-### 4. 输出激活状态
-
-**必须输出**: "Guard v4.0.0 已激活。读取 Canon {N} 条规则。Mnemonic 状态: 会话 #{sessions}。"
+**必须输出**: "Mnemonic v3.0.0 已激活。近 7 天拦截 {N} 次。模式识别: {on/off}。"
 
 ---
 
-## 五层拦截器
+## 自动模式识别
+
+### 触发条件
+
+同一关键词在 `intercept_log.jsonl` 中 7 天内出现 ≥ 3 次。
+
+### 识别流程
 
 ```
-Interceptor 接口       ← 每个拦截器独立开关、独立日志
-  ├── BanInterceptor              精确匹配拦截
-  ├── FabricationInterceptor      防幻觉拦截
-  ├── StepCompletenessInterceptor 防跳步骤拦截
-  ├── SkillLoadInterceptor        防偷懒拦截
-  └── ClarifyInterceptor          防瞎猜拦截
+1. 遍历 intercept_log.jsonl → 按 rule_id + interceptor 分组
+2. 统计每组频次 → 筛选 ≥3 次的模式
+3. 与 rules/ 已固化规则去重 → 排除已覆盖的
+4. 生成规则草稿 → clarify 提醒用户确认
+5. 用户确认 → 推送至 Canon 固化引擎
 ```
 
-### 1. BanInterceptor — 精确匹配
-
-当前思考文本 → 逐条比对 patterns.json 中所有 ban keywords → 命中则拦截。
-
-### 2. FabricationInterceptor — 防幻觉
-
-识别"声称型语句"（我能/我有/我会/已创建/存在...）→ 逐条核实（查 skills_list/API/源）→ 无法核实则拦截。
-
-### 3. StepCompletenessInterceptor — 防跳步骤
-
-用户原始指令 → 拆解为步骤列表 → 已完成 vs 未完成 → 有遗漏则拦截追加执行。
-
-### 4. SkillLoadInterceptor — 防偷懒
-
-任务文本 → 提取领域关键词 → 扫描 skills_list → 0 个匹配 Skill 已加载则拦截。
-
-### 5. ClarifyInterceptor — 防瞎猜
-
-当前步骤 ≥ 2 个可选项且需用户决策 → 检查是否已调用 clarify → 未调用则拦截。
-
----
-
-## 评分计数器
-
-每次拦截检查后，更新 Canon rules/ 目录中对应规则的 frontmatter：
-
-```
-命中时: hit_count += 1, last_triggered = now()
-误报时: false_positives += 1 (用户说「这不是错误」后回调写入)
-```
-
-Canon 固化引擎运行时读取 hit_count / false_positives 计算评分。高分规则严格拦截，低分规则降级为提醒。
-
----
-
-## 拦截日志
-
-每次拦截写入 `intercept_log.jsonl`：
+### 规则草稿格式
 
 ```json
-{"ts":"ISO8601","interceptor":"Ban","rule_id":"rule_001","action":"block","reason":"关键词匹配: 虚构","context":"用户要求输出一个不存在的API"}
+{
+  "ts": "ISO8601",
+  "type": "ban",
+  "rule": "自动识别: 高频违规XXX",
+  "context": "近7天触发3次，拦截器: BanInterceptor",
+  "match": {
+    "exact": ["关键词1", "关键词2"],
+    "semantic": "语义描述"
+  },
+  "source": "mnemonic_pattern"
+}
 ```
+
+### 推送至典则线
+
+草稿不直接写入 rules/，而是通过标准化接口推送至 Canon 固化引擎。Canon 负责去重、分类、冲突检测、写入。
+
+### 误报率自适应
+
+同一模式误报率高时自动降低匹配置信度，减少不必要的 clarify 弹窗。
 
 ---
 
-## 与 Canon / Mnemonic 联动
+## CLI 命令
+
+| 命令 | 说明 |
+|------|------|
+| `hermes reflect status` | 查看规则库状态（总数/分类/最近固化时间） |
+| `hermes reflect add "规则"` | 手动添加规则 |
+| `hermes reflect scan` | 手动触发扫盘 |
+| `hermes reflect patterns` | 查看当前识别到的高频模式 |
+
+---
+
+## 与 Canon / Guard 联动
 
 ```
-Canon (producer, system_anchor)
-    │  生产 rules/*.md + patterns.json + errors.jsonl
-    ▼
-Guard (guard, pre_action)
-    │  读取 Canon 规则 → 五层拦截 → 命中/误报计数
+Guard (pre_action)
     │  写入 intercept_log.jsonl
     ▼
-Mnemonic (memory, background)
-    │  读取 intercept_log.jsonl → 自动模式识别 → 推送规则草稿至 Canon
+Mnemonic (background)
+    │  读取拦截日志 → 模式识别 → 生成草稿
+    │  推送至 Canon 固化引擎
     ▼
-Canon 固化引擎 → 去重 → 写入 rules/
+Canon (system_anchor)
+    │  去重 → 冲突检测 → 写入 rules/
+    ▼
+Guard 下一轮拦截使用更新后的规则
 ```
 
 ---
@@ -130,7 +122,5 @@ Canon 固化引擎 → 去重 → 写入 rules/
 ## 安装
 
 ```bash
-npx skills add guard --yes --global
+npx skills add mnemonic --yes --global
 ```
-
-或从 Canon Mnemonic Guard 仓库独立获取。

@@ -1,37 +1,27 @@
-# Guard 护栏线 v4.0.0
+# Mnemonic 忆存线 v3.0.0
 
-> 自省引擎的规则执行器。从 Canon Mnemonic Guard v2.4.1 剥离独立。
+> 自省引擎的状态记忆层。读取 Guard 拦截日志，自动识别高频错误模式。
 
-Guard 是规范执行层——它不生产规则、不存储记忆、只执行拦截。运行时读取 Canon 规则库和 Mnemonic 状态，通过五层拦截器确保 AI 行为符合用户规范。
+不生产规则、不执行拦截——只分析、只推送。
 
 ## 安装
 
 ```bash
-npx skills add guard --yes --global
+npx skills add mnemonic --yes --global
 ```
 
 ## 工作原理
 
-```
-用户请求 → Guard 五层拦截检查 → 放行/拦截 → 执行
-                │
-                ├── 命中 → 拦截 + 写入 intercept_log + 更新 Canon 评分
-                └── 未命中 → 放行
-```
+Guard 拦截 → 写入日志 → Mnemonic 分析 → 发现高频模式 → 推送 Canon 固化。
 
-## 五层拦截器
+## CLI
 
-| 拦截器 | 功能 |
-|--------|------|
-| BanInterceptor | 精确关键词匹配，命中即拦截 |
-| FabricationInterceptor | 识别幻觉声称，逐条核实 |
-| StepCompletenessInterceptor | 拆解指令步骤，防止跳步 |
-| SkillLoadInterceptor | 检测领域 Skill 是否加载 |
-| ClarifyInterceptor | 多选项场景强制 clarify |
+- `hermes reflect status` — 查看规则库状态
+- `hermes reflect patterns` — 查看高频错误模式
 
-## 与 Canon / Mnemonic 联动
+## 三线联动
 
-Canon 生产规则 → Guard 执行拦截 → Mnemonic 分析模式 → Canon 固化升级。
+Canon（规则生产）→ Guard（拦截执行）→ Mnemonic（模式识别）→ Canon（固化升级）
 
 ## License
 

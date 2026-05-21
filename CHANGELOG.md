@@ -1,26 +1,25 @@
-# Changelog — Guard 护栏线
+# Changelog — Mnemonic 忆存线
 
-## [4.0.0] — 2026-05-21
+## [3.0.0] — 2026-05-21
 
-### 初始发布 — 从 Canon v2.4.1 剥离独立
+### 初始发布 — 状态记忆层独立 Skill
 
-**五层拦截器**
-- BanInterceptor: 精确关键词匹配拦截
-- FabricationInterceptor: 防幻觉声称核实
-- StepCompletenessInterceptor: 指令步骤完整性检查
-- SkillLoadInterceptor: 领域 Skill 加载检测
-- ClarifyInterceptor: 多选项强制 clarify
+**自动模式识别**
+- 读取 Guard intercept_log.jsonl，按关键词分组统计
+- 同一关键词 7 天内 ≥ 3 次 → 自动生成规则草稿
+- 推送至 Canon 固化引擎，不直接写入 rules/
 
-**评分计数器**
-- 命中自动 `hit_count += 1, last_triggered = now()`
-- 误报回调写入 `false_positives += 1`
-- 数据回写 Canon rules/ 目录 frontmatter
+**CLI 命令**
+- `hermes reflect status` — 规则库状态
+- `hermes reflect add` — 手动添加规则
+- `hermes reflect scan` — 手动扫盘
+- `hermes reflect patterns` — 高频模式查看
 
-**拦截日志**
-- `intercept_log.jsonl`: 每次拦截的完整记录
-- 供 Mnemonic v3.0.0 自动模式识别消费
+**角色声明**
+- `role: memory, stage: background`
+- 独立进程模式：不作为 Skill 加载，作为 Hermes 守护进程常驻
 
 **三线联动**
-- 读取 Canon rules/ + patterns.json + errors.jsonl
-- 读取 Mnemonic state.json
-- 单向消费，不反向污染
+- 读取 Guard intercept_log.jsonl + Canon errors.jsonl
+- 推送规则草稿至 Canon 固化引擎
+- 不生产规则、不执行拦截
