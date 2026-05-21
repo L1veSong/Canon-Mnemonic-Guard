@@ -71,21 +71,14 @@ Idea Foundry 作为 CMG 的调度联动伙伴，在 IF 的 Phase -3 开启「启
 | **hermes-memory-installer** | 多步手动配置，非标准 skill |
 | **basic-memory-skills** | MCP 服务器依赖 |
 | **Diamond Memory** | 不存在 |
-| **skill.guard** | Hermes 内置安全扫描器 |
+- 教训：必须阅读实际代码/架构再下冲突结论，不可凭名称或分类推断
 
----
+### 评估标准修正记录
 
-## rtk 对比
-
-| | rtk-hermes (ogallotti) | rtk-ai/rtk |
-|---|---|---|
-| 语言 | Python | Rust |
-| 形态 | Hermes 插件 | 独立 CLI 代理 |
-| 安装 | `pip3 install rtk-hermes` | `cargo install rtk` |
-| 集成 | 直接嵌入 Hermes 管道 | 命令行包裹 `rtk cargo build ...` |
-| 省 token | 60-90% | 60-90% |
-| 关系 | 同一团队产品（作者邮箱含 rtk-ai） | 核心引擎 |
-| 推荐 | ✅ 已安装已启用 | ❌ 不需要（rtk-hermes 已集成核心） |
+| 问题 | 修正 |
+|------|------|
+| plur 误判为 MemoryProvider 插件 | 实际是 TypeScript MCP 服务器，独立进程，数据存 `~/.plur/` |
+| rtk-hermes 集成方式 | 被动受益——压缩所有输出，CMG 自然省 token |
 
 ---
 
@@ -93,7 +86,30 @@ Idea Foundry 作为 CMG 的调度联动伙伴，在 IF 的 Phase -3 开启「启
 
 | 日期 | 变更 |
 |------|------|
-| 2026-05-21 | 终版：评估 16 个候选，8 通过、8 否决。三线分列推荐表。全部推荐满足添加式集成原则（CMG 只读不写） |
+| 2026-05-22 | rtk-hermes+plur 最终结论；plur 误判修正 |
+| 2026-05-21 | 初版：14候选，8通过/6否决 |
+| 形态 | Hermes 插件 | 独立 CLI 代理 |
+| 安装 | `pip3 install rtk-hermes` | `cargo install rtk` |
+| 集成 | 直接嵌入 Hermes 管道 | 命令行包裹 `rtk cargo build ...` |
+| 省 token | 60-90% | 60-90% |
+| 关系 | 同一团队产品（作者邮箱含 rtk-ai） | 核心引擎 |
+- 教训：必须阅读实际代码/架构再下冲突结论，不可凭名称或分类推断
+
+### 评估标准修正记录
+
+| 问题 | 修正 |
+|------|------|
+| plur 误判为 MemoryProvider 插件 | 实际是 TypeScript MCP 服务器，独立进程，数据存 `~/.plur/` |
+| rtk-hermes 集成方式 | 被动受益——压缩所有输出，CMG 自然省 token |
+
+---
+
+## 更新记录
+
+| 日期 | 变更 |
+|------|------|
+| 2026-05-22 | rtk-hermes+plur 最终结论；plur 误判修正 |
+| 2026-05-21 | 初版：14候选，8通过/6否决 |
 | 2026-05-21 | 初版：评估 14 个候选，6 通过、8 否决。三线分列推荐表 |
 | 2026-05-21 | v2.3.2: 新增 idea-foundry 调度联动推荐。IF Phase -3 可读取 CMG rules/ 作为约束源 |
 | 2026-05-21 | 初版：评估 14 个候选，8 通过、6 否决 |
