@@ -8,9 +8,9 @@
 
 | 阶段 | Skill 包名 | 版本系列 | 状态 | 配套推荐 |
 |------|-----------|---------|------|---------|
-| 1 | `canon` | v2.x | ✅ 当前 | obsidian（rules/ 可视化） |
-| 2 | `mnemonic` | v3.x | 📋 规划 | memory (内置) + 待生态成熟 |
-| 3 | `guard` | v4.x | 📋 规划 | ralph-loop / verification-before-completion / diagnose |
+| 1 | `canon` | v2.x | ✅ 已发布 v2.4.1 | obsidian（rules/ 可视化） |
+| 2 | `mnemonic` | v3.x | ✅ 已发布 v3.1.0 | memory (内置) + 自动模式识别 |
+| 3 | `guard` | v4.x | ✅ 已发布 v4.3.0 | ralph-loop / verification-before-completion / diagnose |
 | 4 | `self-reflection-engine` | v5.0.0 | 📋 规划 | 继承全部推荐，外观模式统一对外 |
 
 ---

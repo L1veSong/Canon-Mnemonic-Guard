@@ -4,6 +4,20 @@ All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
 
 ---
 
+## [5.0.0] — 2026-05-21
+
+### 三线合一外观模式
+
+**架构**
+- 外观模式统一引擎：对外 `role: guard, stage: pre_action`
+- 内部三模块：Canon(规则生产) + Guard(拦截执行) + Mnemonic(模式识别)
+- 四模块严格独立互不混合
+- 闭环验证：10 拦截→2 草稿→2 固化
+
+**16 条未来方向入库**
+
+---
+
 ## [2.4.1] — 2026-05-21
 
 ### v2 功能闭环：护栏剥离 + 评分实装 + 角色生效
