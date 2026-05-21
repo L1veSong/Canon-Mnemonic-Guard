@@ -4,6 +4,33 @@ All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
 
 ---
 
+## [2.4.0] — 2026-05-21
+
+### Phase 2: 规则评分 + 角色声明制 + 工具链完善
+
+**规则效果评分**
+- 每条规则跟踪命中率/误报率/最后命中时间/创建日期
+- 误报率>30%自动标记「待调整」，180天未命中提示过期
+- 固化报告增加规则效果排行（Top 5高频 + Bottom 5低频）
+- 与 Guard v4.2.0 双向联动：Canon 输出评分→Guard 调整拦截策略
+
+**角色声明制**
+- Canon 以 `role: producer, stage: system_anchor` 声明规则生产锚点
+- 废除数字优先级（`priority: 110`），三线统一使用 `role+stage` 声明式协作
+- 新 skill 加入只需声明 role+stage，自动归入对应阶段
+
+**工具链完善**
+- 简化触发词：`!remember` / `!solidify` / `!scan` / `!export` / `!import`
+- 初始化命令：`npx canon-mnemonic-guard init`
+- 规则导入/导出：`!export` ZIP打包 / `!import <path>` 外部规则集导入（自动冲突检测）
+- config.json 新增 `scoring`、`role`、`commands` 配置段
+
+### Changed
+- 典则线版本从 v2.3.2 → v2.4.0
+- 激活消息改为：角色: producer / 评分: on/off / 模式: expert/simple
+
+---
+
 ## [2.3.2] — 2026-05-21
 
 ### Idea Foundry 规则集联动

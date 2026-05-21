@@ -1,7 +1,7 @@
 ---
 name: canon-mnemonic-guard
 description: 自省引擎典则线 (Canon) — 规则生产库。负责规则来源、固化、存储、效果评分。纯静态规则层。
-version: 2.3.2
+version: 2.4.0
 role: guard
 stage: pre_action
 dependencies: []
@@ -11,7 +11,7 @@ author: L1veSong
 license: MIT
 ---
 
-# Canon Mnemonic Guard v2.3.2
+# Canon Mnemonic Guard v2.4.0
 
 > **角色**: guard (护栏管道) | **阶段**: pre_action (每次行动前) | **位置**: 在所有执行之前
 >
@@ -23,8 +23,10 @@ license: MIT
 
 | 版本 | 变更 |
 |------|------|
-| v2.3.2 | + Idea Foundry规则集联动(config.json: if_integration) / + CMG rules/ 目录对外暴露为IF可消费约束源 / + 调度联动推荐(Idea Foundry) |
-| v2.2.8 | + 三线分列推荐列表（典则/护栏/行为准则） / + companion-skills-research.md 增强包调研报告（14评估/6通过/8否决） / + obsidian 归位典则线 / + 全部推荐满足零配置标准 |
+| v2.4.0 | + 规则效果评分(命中率/误报率/过期检测) / + 角色声明制(producer/system_anchor) / + 初始化命令(!init) / + 简化触发词(!remember/!solidify/!scan) / + 规则导入导出(!import/!export) |
+| v2.3.1 | + 规则冲突检测: 写入前扫描同类型规则 / + 冲突裁决: clarify四选一(A保留新/B保留旧/C都留标记/D编辑) / + 自动裁决: 明确指定>最近使用>更严格 |
+| v2.3.0 | + 依赖解耦: RuleReader接口+7个适配器(JSON/SOUL/Obsidian/Memory/Skill/Plur/Custom) / + 可配置扫描源(config.json) / + 模式切换(expert/simple) / + PlurRuleSource / + 扫描源白名单制 |
+| v2.2.9 | + 首次真实扫盘提取+固化执行(15条/4源/8ban+3gap+4lazy) / + rules/目录+errors.jsonl+patterns.json+state.json全部实装 / 典则线v2.x功能闭环 |
 | v2.2.3 | + 角色声明制: 废除数字优先级(priority:110→role+stage) / + 声明式层级替换数字排序 / + 冲突声明表改为stage驱动 / + 流水线图改为stage自然排列 |
 | v2.2.2 | + 设计哲学: 彻底解耦·物理拆分·单向依赖 / + 三线职责边界严格定义 / + v5.0.0 架构预览 / + 设计参考（gstack/Ports&Adapters/Microkernel） |
 | v2.2.1 | + 版本路线补全: 护栏线 Guard (4.x.x) 路线图，三线并行→v5.0.0 统一引擎 |
@@ -100,7 +102,7 @@ tags: [分类标签]
 **注入格式:**
 ```
 ═══════════════════════════════════════
-自省引擎 v2.3.2 · 永久规则 (自动注入)
+自省引擎 v2.4.0 · 永久规则 (自动注入)
 ═══════════════════════════════════════
 [从 rules/_index.md 的表格 + 各规则的 frontmatter 摘要]
 ═══════════════════════════════════════
@@ -140,7 +142,7 @@ tags: [分类标签]
 
 ### 6. 输出激活状态
 
-**必须输出**: "自省引擎 v2.3.2 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。上次固化: {日期}。跨会话 # {N}。模式: {expert/simple}。IF联动: {on/off}。"
+**必须输出**: "自省引擎 v2.4.0 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。角色: producer。评分: {on/off}。模式: {expert/simple}。"
 
 ---
 
@@ -191,6 +193,78 @@ state.errors_since_solidify += 1
 - 新规则比旧规则更严格（ban 比 lazy 严格）→ 自动提示但仍需确认
 
 ---
+
+## 规则效果评分 (v2.4.0)
+
+固化引擎每次运行后，自动为每条规则计算效果评分并写入 `rules/` 目录的 frontmatter。
+
+**评分指标：**
+
+| 指标 | 计算方式 | 用途 |
+|------|---------|------|
+| 命中率 | 触发次数 ÷ 会话数 | 衡量规则的实际使用频率 |
+| 误报率 | 用户标记误报次数 ÷ 触发次数 | 衡量规则的精准度 |
+| 最后命中 | 距上次触发的天数 | 判断规则是否已过时 |
+| 创建日期 | 规则首次写入日期 | 跟踪规则生命周期 |
+
+**自动维护规则：**
+- 误报率 > 30%（`scoring.false_positive_threshold`）→ 自动标记「待调整」，下次触发时先 clarify 确认
+- 180 天未命中（`scoring.expiry_days`）→ 提示「此规则 180 天未触发，是否移除？」
+- 固化报告增加规则效果排行（Top 5 高频规则 + Bottom 5 低频规则）
+
+**与 Guard 联动（v4.2.0）：** Canon 输出规则评分 → Guard 读取后调整拦截策略（高分规则严格拦截，低分规则降级为提醒）。
+
+---
+
+## 角色声明制 (v2.4.0)
+
+废除数字优先级，Canon 以角色声明自己在管道中的位置：
+
+```yaml
+role: producer           # 规则生产锚点
+stage: system_anchor     # 系统锚点层：最先加载，最后决策
+```
+
+**三线角色声明协作：**
+
+```
+Canon:   role: producer, stage: system_anchor  → 只生产规则，不执行拦截
+Mnemonic: role: memory,   stage: background     → 只记状态，不生产不执行
+Guard:   role: guard,     stage: pre_action     → 只执行拦截，不生产不存记忆
+```
+
+新 skill 加入只需声明 `role + stage`，自动归入对应阶段。终结 `priority: 110` 式军备竞赛。
+
+---
+
+## 命令参考 (v2.4.0)
+
+### 简化触发词
+
+| 触发词 | 等价自然语言 | 说明 |
+|--------|------------|------|
+| `!remember 禁止xxx` | 「记住，禁止xxx」 | 快速记录规则 |
+| `!solidify` | 「固化规则」 | 手动触发固化 |
+| `!scan` | 「扫盘」 | 手动触发扫盘提取 |
+| `!export` | 「导出规则」 | 导出 rules/ 为 ZIP |
+| `!import <path>` | 「导入规则」 | 从 ZIP 导入外部规则集 |
+
+### 初始化命令
+
+```bash
+npx canon-mnemonic-guard init
+```
+
+自动创建：rules/ 目录结构 + 示例规则 + config.json + state.json + checklists/
+
+### 规则导入/导出
+
+```
+!export → 打包 rules/ 目录为 rules-export-YYYYMMDD.zip
+!import <path-to-zip> → 解压 ZIP → 冲突检测 → 逐条确认导入
+```
+
+导入时自动运行冲突检测。与现有规则冲突的条目触发交互裁决。
 
 ## 每次行动前（拦截检查）
 
@@ -719,7 +793,7 @@ grep -rn "v[0-9]\.[0-9]\.[0-9]" SKILL.md README.md CHANGELOG.md
 
 > **定位：** 规则生产库。典则线仅输出标准化规则，不含任何拦截、校验、执行逻辑。
 
-**v2.3.2 (当前):** IF规则集联动 / 规则冲突检测+裁决 / 可配置扫描源 / 模式切换 / 推荐列表
+**v2.4.0 (当前):** 规则效果评分 + 角色声明制(producer/system_anchor) + 命令(!init/!remember/!export/!import)
 
 ---
 

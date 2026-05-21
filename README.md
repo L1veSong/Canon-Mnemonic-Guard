@@ -1,11 +1,11 @@
-# Canon Mnemonic Guard — 典则线 v2.3.2
+# Canon Mnemonic Guard — 典则线 v2.4.0
 
 > AI 的错题本 + 免疫系统。你只需指出一次错误，它从此记住。
 >
 > **当前状态：** 仅典则线 (Canon v2.x) 已发布为独立 Skill。忆存线 (Mnemonic v3.x) 和护栏线 (Guard v4.x) 仍在规划中。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.3.2-blue)]()
+[![Version](https://img.shields.io/badge/version-2.4.0-blue)]()
 
 ---
 

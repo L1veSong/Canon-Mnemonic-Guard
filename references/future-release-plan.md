@@ -30,7 +30,14 @@
 
 **职责：** 规则来源、固化、扫描、效果评分。纯静态规则层。
 
-**当前版本：** v2.2.7
+**当前版本：** v2.3.2
+
+**Phase 1 完成（v2.3.x）：**
+- ✅ v2.3.0 依赖解耦：RuleReader 接口 + 7 个适配器 + 可配置扫描源
+- ✅ v2.3.1 规则冲突检测与裁决
+- ✅ v2.3.2 Idea Foundry 规则集联动
+
+**Phase 2 待办（v2.4.0）：** 规则效果评分 + 角色声明制 + init/export 命令
 
 ---
 
@@ -90,4 +97,4 @@ stage: pre_action
 内部: Canon (producer) → Mnemonic (memory) → Guard (guard)
 ```
 
-**文件位置：** `~/.hermes/skills/software-development/hermes-self-reflection-engine/`
+**文件位置：** `~/.hermes/skills/software-development/self-reflection-engine/`

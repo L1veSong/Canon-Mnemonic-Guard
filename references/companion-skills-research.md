@@ -22,6 +22,7 @@
 
 | 推荐 | 类型 | 增强点 | CMG 写入第三方？ | 第三方行为被修改？ |
 |------|------|--------|:---:|:---:|
+| `idea-foundry` | Skill | CMG 规则集注入 IF 代码生成阶段 | ❌ | ❌ |
 | `ralph-loop` | Skill | 执行闭环 | ❌ | ❌ |
 | `verification-before-completion` | Skill | 证据先于断言 | ❌ | ❌ |
 | `diagnose` | Skill | 根因调试 | ❌ | ❌ |
@@ -32,6 +33,10 @@
 | `memory` (Hermes 内置) | 内置 | 跨会话记忆 | ❌ | ❌ |
 
 **集成模式：全部添加式（CMG 只读，第三方完全不受影响）**
+
+### 新增：调度联动
+
+Idea Foundry 作为 CMG 的调度联动伙伴，在 IF 的 Phase -3 开启「启用 CMG 规则集」后，CMG 的 rules/ 目录作为只读约束源注入到 IF 的代码生成阶段。CMG 不修改 IF 的行为，IF 也不修改 CMG 的数据——纯粹的消费关系。
 
 ---
 
@@ -72,5 +77,6 @@
 
 | 日期 | 变更 |
 |------|------|
-| 2026-05-21 | 评估标准修订（CMG自动感知调用 > 第三方安装难度），新增 plur/CLI-Anything/mano-p/shotgun_code 评估，plur 标记为 pending |
+| 2026-05-21 | v2.3.2: 新增 idea-foundry 调度联动推荐。IF Phase -3 可读取 CMG rules/ 作为约束源 |
+| 2026-05-21 | 初版：评估 14 个候选，8 通过、6 否决。三线分列推荐表 |
 | 2026-05-21 | 初版：评估 14 个候选，6 通过、8 否决 |
