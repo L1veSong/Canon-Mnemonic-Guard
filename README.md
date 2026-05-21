@@ -1,11 +1,11 @@
-# 三省引擎 (CMG) — Canon-Mnemonic-Guard v5.0.1
+# 三省引擎 (CMG) — Canon-Mnemonic-Guard v5.1.0
 
 > AI 的错题本 + 免疫系统。你只需指出一次错误，它从此记住。
 >
 > 取自「吾日三省吾身」。也可昵称「典忆卫」。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-5.0.1-blue)]()
+[![Version](https://img.shields.io/badge/version-5.1.0-blue)]()
 
 ---
 

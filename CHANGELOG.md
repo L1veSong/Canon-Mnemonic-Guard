@@ -4,6 +4,39 @@ All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
 
 ---
 
+## [5.1.0] — 2026-05-22
+
+### E4: 四包制分装
+
+Canon 典则线从 CMG 物理拆分，成为独立 `canon` Skill。三省引擎正式四包制：
+
+| 包 | 版本 | 说明 |
+|----|------|------|
+| `canon-mnemonic-guard` | v5.1.0 | 外观索引层 |
+| `canon` | v2.4.1 | 典则线独立 Skill |
+| `guard` | v4.4.0 | 护栏线独立 Skill |
+| `mnemonic` | v3.2.0 | 忆存线独立 Skill |
+
+CMG v5.1.0 外观层精简为纯索引，无冗余逻辑。每条线版号独立变更互不污染。
+
+---
+
+## [5.0.2] — 2026-05-22
+
+### 7项低风险优化全面落地
+
+| 编号 | 内容 | 所属 |
+|------|------|------|
+| C2 | 动态固化阈值 adaptive/fixed 双模式 | Canon |
+| C3 | 规则导入导出 !export/!import | Canon |
+| C4 | 跨类型冲突检测 ban↔gap↔lazy | Canon |
+| G5 | 重名解决 全路径加载 | Guard |
+| M2 | 独立持久化 mnemonic_state.json | Mnemonic |
+| M4 | 误报率双向调节 置信度±0.1/0.2 | Mnemonic |
+| E1 | 健康检查 五文件完整性检测 | Engine |
+
+---
+
 ## [5.0.1] — 2026-05-22
 
 ### 内部引用同步
