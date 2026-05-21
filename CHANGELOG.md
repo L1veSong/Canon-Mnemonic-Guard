@@ -4,6 +4,14 @@ All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
 
 ---
 
+## [5.0.1] — 2026-05-22
+
+### 内部引用同步
+- Guard 子模块引用从 v4.3.0 更新为 v4.3.1（G1 五层拦截器运行时实现）
+- CMG 版本号同步
+
+---
+
 ## [5.0.0] — 2026-05-21
 
 ### 三线合一外观模式

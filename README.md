@@ -1,4 +1,4 @@
-# 三省引擎 (CMG) — Canon-Mnemonic-Guard v5.0.0
+# 三省引擎 (CMG) — Canon-Mnemonic-Guard v5.0.1
 
 > AI 的错题本 + 免疫系统。你只需指出一次错误，它从此记住。
 >

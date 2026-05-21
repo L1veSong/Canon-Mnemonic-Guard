@@ -23,9 +23,8 @@
 | 推荐 | 类型 | 增强点 | CMG 写入第三方？ | 第三方行为被修改？ |
 |------|------|--------|:---:|:---:|
 | `idea-foundry` | Skill | CMG 规则集注入 IF 代码生成阶段 | ❌ | ❌ |
-| `ralph-loop` | Skill | 执行闭环 | ❌ | ❌ |
-| `verification-before-completion` | Skill | 证据先于断言 | ❌ | ❌ |
-| `diagnose` | Skill | 根因调试 | ❌ | ❌ |
+| `guard` | 三省引擎(CMG)护栏线 | 五层拦截器(G1修复: v4.3.1已从静态规格升级为可执行步骤) | ❌ | ❌ |
+| `mnemonic` | 三省引擎(CMG)忆存线 | 自动模式识别 | ❌ | ❌ |
 | `rtk-hermes` | Hermes 插件 | 压缩 token 60-90% | ❌ | ❌ |
 | `plur` | MCP 服务器 | 扩展规则来源（v2.3.0） | ❌ | ❌ |
 | `obsidian` | Skill | rules/ 可视化 | ❌ | ❌ |
