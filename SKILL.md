@@ -1,7 +1,7 @@
 ---
 name: canon-mnemonic-guard
 description: 自省引擎典则线 (Canon) — 规则生产库。负责规则来源、固化、存储、效果评分。纯静态规则层。
-version: 2.3.1
+version: 2.3.2
 role: guard
 stage: pre_action
 dependencies: []
@@ -11,7 +11,7 @@ author: L1veSong
 license: MIT
 ---
 
-# Canon Mnemonic Guard v2.3.1
+# Canon Mnemonic Guard v2.3.2
 
 > **角色**: guard (护栏管道) | **阶段**: pre_action (每次行动前) | **位置**: 在所有执行之前
 >
@@ -23,7 +23,7 @@ license: MIT
 
 | 版本 | 变更 |
 |------|------|
-| v2.3.1 | + 规则冲突检测: 写入前扫描同类型规则 / + 冲突裁决: clarify四选一(A保留新/B保留旧/C都留标记/D编辑) / + 自动裁决: 明确指定>最近使用>更严格 |
+| v2.3.2 | + Idea Foundry规则集联动(config.json: if_integration) / + CMG rules/ 目录对外暴露为IF可消费约束源 / + 调度联动推荐(Idea Foundry) |
 | v2.2.8 | + 三线分列推荐列表（典则/护栏/行为准则） / + companion-skills-research.md 增强包调研报告（14评估/6通过/8否决） / + obsidian 归位典则线 / + 全部推荐满足零配置标准 |
 | v2.2.3 | + 角色声明制: 废除数字优先级(priority:110→role+stage) / + 声明式层级替换数字排序 / + 冲突声明表改为stage驱动 / + 流水线图改为stage自然排列 |
 | v2.2.2 | + 设计哲学: 彻底解耦·物理拆分·单向依赖 / + 三线职责边界严格定义 / + v5.0.0 架构预览 / + 设计参考（gstack/Ports&Adapters/Microkernel） |
@@ -100,7 +100,7 @@ tags: [分类标签]
 **注入格式:**
 ```
 ═══════════════════════════════════════
-自省引擎 v2.3.1 · 永久规则 (自动注入)
+自省引擎 v2.3.2 · 永久规则 (自动注入)
 ═══════════════════════════════════════
 [从 rules/_index.md 的表格 + 各规则的 frontmatter 摘要]
 ═══════════════════════════════════════
@@ -140,7 +140,7 @@ tags: [分类标签]
 
 ### 6. 输出激活状态
 
-**必须输出**: "自省引擎 v2.3.1 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。上次固化: {日期}。跨会话 # {N}。模式: {expert/simple}。冲突裁决: {auto/manual}。"
+**必须输出**: "自省引擎 v2.3.2 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。上次固化: {日期}。跨会话 # {N}。模式: {expert/simple}。IF联动: {on/off}。"
 
 ---
 
@@ -596,6 +596,12 @@ grep -rn "v[0-9]\.[0-9]\.[0-9]" SKILL.md README.md CHANGELOG.md
 | `verification-before-completion` | Skill | 证据先于断言 | Guard coding.yaml 已引用：拦截「声称完成但未验证」→ 自动调用 |
 | `diagnose` | Skill | 根因调试 | Guard ban_check 反复命中同一规则 → 自动触发 diagnose 分析根因 → Guard 优化规则 |
 
+#### 调度联动推荐
+
+| 推荐 | 类型 | 增强点 | 集成方式 |
+|------|------|--------|---------|
+| `idea-foundry` | Skill | CMG 规则集注入到 IF 代码生成阶段 | CMG 的 rules/ 目录对外暴露为约束源。IF Phase -3 开启「启用 CMG 规则集」后，rules/ 中的 ban 规则作为约束注入到流水线代码生成阶段，确保产出物符合用户规范 |
+
 #### 成本优化推荐
 
 | 推荐 | 类型 | 增强点 | 集成方式 |
@@ -713,7 +719,7 @@ grep -rn "v[0-9]\.[0-9]\.[0-9]" SKILL.md README.md CHANGELOG.md
 
 > **定位：** 规则生产库。典则线仅输出标准化规则，不含任何拦截、校验、执行逻辑。
 
-**v2.3.1 (当前):** 规则冲突检测+裁决 / 可配置扫描源(config.json) / 模式切换(expert/simple) / 推荐列表
+**v2.3.2 (当前):** IF规则集联动 / 规则冲突检测+裁决 / 可配置扫描源 / 模式切换 / 推荐列表
 
 ---
 

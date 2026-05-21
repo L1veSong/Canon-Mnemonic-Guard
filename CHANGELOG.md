@@ -4,6 +4,16 @@ All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
 
 ---
 
+## [2.3.2] — 2026-05-21
+
+### Idea Foundry 规则集联动
+- CMG rules/ 目录对外暴露为 IF 可消费约束源（`config.json` 的 `if_integration` 字段）
+- IF Phase -3 开启「启用 CMG 规则集」后，rules/ 中的 ban 规则作为约束注入到代码生成阶段
+- 推荐列表新增「调度联动」分类：`idea-foundry`
+- 激活消息新增 `IF联动: {on/off}` 输出
+
+---
+
 ## [2.3.1] — 2026-05-21
 
 ### 规则冲突检测与裁决
