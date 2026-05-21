@@ -1,71 +1,75 @@
-# 发布检查清单
+# 版本发布自检清单
 
-每次版本发布前逐条验证。跳过任何一步即为未完成发布。
+> 每次版本号变更后必须逐条执行。CMG 实战教训：v2.2.9 发布时 README 标题仍写 v2.2.6；v2.3.0 发布时注入/激活消息仍写 v2.2.3；v5.0.0 发布时多处滞留 v2.4.1。此后每次漏改都被用户指出。
 
 ---
 
-## 版本号自洽
+## 全文件 grep 验证（发布最后一步，不可跳过）
 
 ```bash
 grep -rn "v[0-9]\.[0-9]\.[0-9]" SKILL.md README.md CHANGELOG.md
 ```
 
-确保所有出现处同步到新版本号。以下位置最容易遗漏：
-
-| 位置 | 检查项 |
-|------|--------|
-| SKILL.md frontmatter | `version:` 字段 |
-| SKILL.md 标题 | `# Canon Mnemonic Guard vX.X.X` |
-| SKILL.md 注入格式 | `三省引擎 vX.X.X · 永久规则` |
-| SKILL.md 激活消息 | `三省引擎 vX.X.X 已激活` |
-| SKILL.md 版本变更表 | 新增版本条目 |
-| SKILL.md 典则线当前标记 | `vX.X.X (当前):` |
-| README.md 标题 | `# 三省引擎 (CMG) — ... vX.X.X` |
-| README.md 徽章 | `version-X.X.X-blue` |
-| CHANGELOG.md 标题 | `## [X.X.X]` |
-| 路线图三线表 | 正确标注 ✅ |
+确保所有出现处一致。
 
 ---
 
-## 内容自洽
+## 逐文件检查清单
 
-| 检查项 | 方法 |
-|--------|------|
-| 所属模块版本号（guard/mnemonic） | grep 确认引用版本与实际一致 |
-| GitHub 链接 | 确认 `L1veSong/Canon-Mnemonic-Guard`，非旧名 `hermes-canon-mnemonic-guard` |
-| 交叉引用 Skill 名 | 确认 `canon-mnemonic-guard`，非 `hermes-self-reflection` |
-| 三省引擎 / 典忆卫 | 正式名和昵称在文档中协调使用 |
-| 三线状态 | v3/v4 标注 ✅ 已发布，非 📋 规划中 |
+### SKILL.md (8 处)
+
+| # | 位置 | 格式 |
+|---|------|------|
+| 1 | frontmatter `version:` | `version: X.Y.Z` |
+| 2 | frontmatter `_comment:` | 内部子模块版本引用（如 Guard v4.3.1） |
+| 3 | 标题 `# Canon Mnemonic Guard` | `# Canon Mnemonic Guard vX.Y.Z` |
+| 4 | 版本变更表 | 新增一行 |
+| 5 | 注入格式 `三省引擎 vX.Y.Z` | 第 ~103 行 |
+| 6 | 激活消息 `三省引擎 vX.Y.Z` | 第 ~143 行 |
+| 7 | 典则线当前标记 `vX.Y.Z (当前)` | 第 ~780 行 |
+| 8 | 三线路线图中的版本标注 | 如有 GUI 相关更新需同步 |
+| 9 | 架构 `_comment` 中 Guard/Mnemonic 版本引用 | 子模块升级时必查 |
+
+### README.md (3 处)
+
+| # | 位置 | 格式 |
+|---|------|------|
+| 1 | 标题 `# 三省引擎 (CMG) — Canon-Mnemonic-Guard vX.Y.Z` | 第 1 行 |
+| 2 | badge `[![Version](https://img.shields.io/badge/version-X.Y.Z-blue)]()` | 第 7 行附近 |
+| 3 | 三线架构表版本号 | 如有更新 |
+
+### CHANGELOG.md (1 处)
+
+| # | 位置 | 格式 |
+|---|------|------|
+| 1 | 新增版本条目 | `## [X.Y.Z] — YYYY-MM-DD` |
+
+### 子模块 SKILL.md（Guard / Mnemonic 单独发布时）
+
+| # | 位置 | 格式 |
+|---|------|------|
+| 1 | frontmatter `version:` | 各模块独立版本号 |
+| 2 | 标题 | `# Guard 护栏线 vX.Y.Z` |
+| 3 | description | 如有 CMG 引用需同步 |
+| 4 | CHANGELOG | 新增版本条目 |
 
 ---
 
-## 功能测试
+## 发布后清理
 
-| 检查项 | 命令 |
-|--------|------|
-| Skill 可加载 | `skill_view("canon-mnemonic-guard")` |
-| readiness_status | 必须为 `available` |
-| setup_needed | 必须为 `false` |
-| missing_required_commands | 必须为空 |
-| 子模块可加载 | `skill_view("software-development/guard")` + `skill_view("mnemonic")` |
-| 数据文件存在 | `~/.hermes/self-reflection/rules/` 目录非空 |
-| state.json 可读 | `python3 -c "import json; json.load(open('...'))"` |
+- [ ] 删除旧版桌面 ZIP（避免混淆）
+- [ ] 重新生成 `~/Desktop/Canon-Mnemonic-Guard-vX.Y.Z.zip`
+- [ ] `skill_view` 验证加载正常 + 版本号一致
 
 ---
 
-## 交付物
+## 历史翻车记录
 
-| 文件 | 路径 |
-|------|------|
-| CMG ZIP | `~/Desktop/Canon-Mnemonic-Guard-vX.X.X.zip` |
-| Guard ZIP | `~/Desktop/Guard-vX.X.X.zip` |
-| Mnemonic ZIP | `~/Desktop/Mnemonic-vX.X.X.zip` |
-
----
-
-## 禁止事项
-
-- ❌ 版本号改了 frontmatter 但漏了 README 标题
-- ❌ README 徽章更新但正文说「v3/v4 规划中」
-- ❌ 新建独立 engine Skill 而非升版主 Skill
-- ❌ 回退到旧名 `self-reflection-engine` 或 `hermes-self-reflection`
+| 版本 | 遗漏 | 发现方式 |
+|------|------|---------|
+| v2.2.9 | README 标题仍写 v2.2.6 | 用户指出 |
+| v2.2.9 | 注入/激活消息仍写 v2.2.3 | 自查发现 |
+| v2.3.0 | README 标题/注入/激活消息多版本混乱 | 用户指出 |
+| v5.0.0 | README 标题仍写 v2.4.1 | 用户指出 |
+| v5.0.0 | 创建了错误的 `self-reflection-engine` 独立 Skill | 用户指出 |
+| v5.0.1 | README 标题/CHANGELOG 未更新 | 用户指出 |
