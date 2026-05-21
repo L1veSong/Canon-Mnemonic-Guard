@@ -1,19 +1,20 @@
 ---
 name: canon-mnemonic-guard
 description: 自省引擎典则线 (Canon) — 规则生产库。负责规则来源、固化、存储、效果评分。纯静态规则层。
-version: 2.4.0
-role: guard
-stage: pre_action
+version: 2.4.1
+role: producer
+stage: system_anchor
 dependencies: []
+_comment: "v2.4.1 角色声明制生效: producer=规则生产锚点, system_anchor=系统锚点层。护栏逻辑已剥离至 references/guard-spec.md"
 min_hermes_version: any
 platforms: [linux, macos, windows]
 author: L1veSong
 license: MIT
 ---
 
-# Canon Mnemonic Guard v2.4.0
+# Canon Mnemonic Guard v2.4.1
 
-> **角色**: guard (护栏管道) | **阶段**: pre_action (每次行动前) | **位置**: 在所有执行之前
+> **角色**: producer (规则生产锚点) | **阶段**: system_anchor (系统锚点层) | **位置**: 在所有 Skill 之前加载
 >
 > v2.2.0: + 扫盘提取 (安装时自动扫描已有准则) | 不与存储/记忆类 Skill 冲突 (独立管道+独立存储)
 
@@ -23,7 +24,7 @@ license: MIT
 
 | 版本 | 变更 |
 |------|------|
-| v2.4.0 | + 规则效果评分(命中率/误报率/过期检测) / + 角色声明制(producer/system_anchor) / + 初始化命令(!init) / + 简化触发词(!remember/!solidify/!scan) / + 规则导入导出(!import/!export) |
+| v2.4.1 | + 护栏剥离: 五层拦截迁至 references/guard-spec.md / + 评分计数器: hit_count/false_positives 自动写入 / + 角色声明制生效: role=producer, stage=system_anchor |
 | v2.3.1 | + 规则冲突检测: 写入前扫描同类型规则 / + 冲突裁决: clarify四选一(A保留新/B保留旧/C都留标记/D编辑) / + 自动裁决: 明确指定>最近使用>更严格 |
 | v2.3.0 | + 依赖解耦: RuleReader接口+7个适配器(JSON/SOUL/Obsidian/Memory/Skill/Plur/Custom) / + 可配置扫描源(config.json) / + 模式切换(expert/simple) / + PlurRuleSource / + 扫描源白名单制 |
 | v2.2.9 | + 首次真实扫盘提取+固化执行(15条/4源/8ban+3gap+4lazy) / + rules/目录+errors.jsonl+patterns.json+state.json全部实装 / 典则线v2.x功能闭环 |
@@ -102,7 +103,7 @@ tags: [分类标签]
 **注入格式:**
 ```
 ═══════════════════════════════════════
-自省引擎 v2.4.0 · 永久规则 (自动注入)
+自省引擎 v2.4.1 · 永久规则 (自动注入)
 ═══════════════════════════════════════
 [从 rules/_index.md 的表格 + 各规则的 frontmatter 摘要]
 ═══════════════════════════════════════
@@ -142,7 +143,7 @@ tags: [分类标签]
 
 ### 6. 输出激活状态
 
-**必须输出**: "自省引擎 v2.4.0 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。角色: producer。评分: {on/off}。模式: {expert/simple}。"
+**必须输出**: "自省引擎 v2.4.1 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。角色: producer。评分: {on/off}。护栏: guard-spec。"
 
 ---
 
@@ -268,50 +269,20 @@ npx canon-mnemonic-guard init
 
 ## 每次行动前（拦截检查）
 
-规则匹配逻辑不变（精确匹配 → 语义匹配 → 清单自检），但 v2.1.0 新增:
+> **v2.4.1：护栏逻辑已剥离至 `references/guard-spec.md`。** Canon 不再直接执行拦截——Canon 只生产规则，Guard（v4.0.0）执行拦截。当前过渡期，拦截逻辑仍可运行但视为「Guard 寄生」。
 
-### 防偷懒清单检测详细机制 (遗漏点 4)
+规则匹配逻辑不变（精确匹配 → 语义匹配 → 清单自检）。
 
-之前只在清单里写了"check: xxx"，v2.1.0 补上具体检测逻辑:
+### 评分计数器 (v2.4.1)
 
-**`load_skills` 检查:**
+每次拦截检查后，更新 rules/ 目录中对应规则的 frontmatter：
+
 ```
-当前任务文本 → 提取领域关键词 (如 "论文"→学术, "代码"→开发, "金融"→数据)
-→ 扫描 skills_list 输出 → 匹配领域 Skill
-→ 检查是否已通过 skill_view 加载
-→ 如果 0 个匹配 Skill 已加载 → 触发 action_on_fail
-```
-
-**`ban_check` 检查:**
-```
-当前思考文本 → 逐条比对 patterns.json 中所有 ban keywords
-→ 命中 → 触发拦截
-→ 未命中 → 通过
+命中: hit_count += 1, last_triggered = now()
+误报: false_positives += 1 (用户说「这不是错误」后写入)
 ```
 
-**`no_fabrication` 检查:**
-```
-当前输出文本 → 识别"声称型语句" (我能/我有/我会/已经创建了/存在...)
-→ 每一条声称 → 核实:
-  - 声称 Skill → 查 skills_list
-  - 声称 API → 查 web_search 或 memory
-  - 声称数据 → 查 source
-→ 有 1 条无法核实 → 触发 action_on_fail
-```
-
-**`complete_steps` 检查:**
-```
-用户原始指令 → 拆解为步骤列表
-→ 已完成步骤 → 从上下文提取
-→ 未完成步骤 → 触发 action_on_fail (追加执行)
-```
-
-**`use_clarify` 检查:**
-```
-当前步骤 ≥ 2 个可选项 且 需要用户决策
-→ 检查是否已调用 clarify
-→ 未调用 → 触发 action_on_fail
-```
+固化引擎运行时读取 hit_count / false_positives 计算评分。详见「规则效果评分」章节。
 
 ---
 
@@ -793,7 +764,7 @@ grep -rn "v[0-9]\.[0-9]\.[0-9]" SKILL.md README.md CHANGELOG.md
 
 > **定位：** 规则生产库。典则线仅输出标准化规则，不含任何拦截、校验、执行逻辑。
 
-**v2.4.0 (当前):** 规则效果评分 + 角色声明制(producer/system_anchor) + 命令(!init/!remember/!export/!import)
+**v2.4.1 (当前):** 护栏已剥离(guard-spec.md) + 评分计数器 + 角色生效(producer/system_anchor)
 
 ---
 

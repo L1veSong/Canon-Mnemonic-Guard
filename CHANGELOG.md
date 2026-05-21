@@ -4,6 +4,26 @@ All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
 
 ---
 
+## [2.4.1] — 2026-05-21
+
+### v2 功能闭环：护栏剥离 + 评分实装 + 角色生效
+
+**护栏剥离**
+- 五层拦截逻辑完整迁移至 `references/guard-spec.md`
+- Canon 不再直接执行拦截——只生产规则，Guard（v4.0.0）执行拦截
+- 过渡期拦截仍可运行但视为「Guard 寄生」
+
+**评分计数器实装**
+- 每次拦截命中自动 `hit_count += 1, last_triggered = now()`
+- 用户标记误报自动 `false_positives += 1`
+- 固化引擎运行时读取计数器计算评分
+
+**角色声明制生效**
+- `role: producer, stage: system_anchor` 正式启用
+- 头部描述同步更新
+
+---
+
 ## [2.4.0] — 2026-05-21
 
 ### Phase 2: 规则评分 + 角色声明制 + 工具链完善
