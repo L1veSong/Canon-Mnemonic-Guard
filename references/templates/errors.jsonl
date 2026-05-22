@@ -1,0 +1,3 @@
+# 此文件为模板。安装时复制到 ~/.hermes/self-reflection/errors.jsonl
+# 格式: 每行一条 JSON，type: ban|gap|lazy
+# 安装后由自省引擎自动维护，用户不应手动编辑

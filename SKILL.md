@@ -1,10 +1,10 @@
 ---
 name: canon-mnemonic-guard
 description: 三省引擎 (CMG) — 取自「吾日三省吾身」。典则(规则生产)+护栏(拦截执行)+忆存(模式识别)三线合一外观模式。对外 role:guard stage:pre_action，内部三模块各自独立。
-version: 5.2.1
+version: 5.3.0
 role: guard
 dependencies: [canon, guard, mnemonic]
-_comment: "v5.2.1 SOUL激活: Canon v2.5.2 + Guard v4.5.1 + Mnemonic v3.3.0 + CMG外观。"
+_comment: "v5.3.0 SOUL激活: Canon v2.5.2 + Guard v4.6.0 + Mnemonic v3.3.0 + CMG外观。"
 min_hermes_version: any
 platforms: [linux, macos, windows]
 author: L1veSong
@@ -15,12 +15,12 @@ metadata:
     related_skills: [canon, guard, mnemonic]
 ---
 
-# 三省引擎 (CMG) v5.2.1 — 四包制外观引擎
+# 三省引擎 (CMG) v5.3.0 — 四包制外观引擎
 
 > **对外身份**: guard (护栏) | **阶段**: pre_action | **中文名**: 三省引擎，取自「吾日三省吾身」
 > **CMG = Canon-Mnemonic-Guard = 典则·忆存·护栏**
 >
-> v2.2.0: + 扫盘提取 | v5.0.0: 三线合一外观模式 | v5.1.0: 四包制分装 | v5.2.0: 六大功能大更新 | v5.2.1: SOUL 激活机制
+> v2.2.0: + 扫盘提取 | v5.0.0: 三线合一外观模式 | v5.1.0: 四包制分装 | v5.2.0: 六大功能大更新 | v5.3.0: 典忆卫・闭环校验器
 
 ---
 

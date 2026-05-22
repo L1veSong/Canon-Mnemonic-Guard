@@ -1,11 +1,10 @@
-# 三省引擎 (CMG) — Canon-Mnemonic-Guard v5.2.1
+# 三省引擎 (CMG) — Canon-Mnemonic-Guard v5.3.0
 
-> AI 的错题本 + 免疫系统。你只需指出一次错误，它从此记住。
->
+> AI 的错题本 + 免疫系统 + 监工。你只需指出一次错误，它从此记住。
 > 取自「吾日三省吾身」。也可昵称「典忆卫」。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-5.2.1-blue)]()
+[![Version](https://img.shields.io/badge/version-5.3.0-blue)]()
 
 ---
 
@@ -16,117 +15,77 @@
 | 线路 | 版本 | 定位 | 一句话 |
 |------|------|------|--------|
 | **典则线** Canon | v2.5.2 | 规则生产库 | 你说「记住」→ 写入规则 → 去重固化 |
-| **护栏线** Guard | v4.5.1 | 规则执行器 | 五层拦截 → 动态清单 → 上下文感知 |
+| **护栏线** Guard | v4.6.0 | 规则执行器 + 监工 | 五层拦截 → 闭环校验器逐步骤催办 |
 | **忆存线** Mnemonic | v3.3.0 | 状态记忆层 | 读拦截日志 → 自动模式识别 → 推送规则草稿 |
-| **外观层** CMG | v5.2.1 | 四包索引 | init 脚本 + SOUL 激活标记 + 推荐列表扫描 |
-
-**三线联动：** Canon 生产规则 → Guard 执行拦截 → Mnemonic 识别模式 → Canon 固化升级
+| **外观层** CMG | v5.3.0 | 四包索引 | init 脚本 + SOUL 激活标记 + 推荐列表扫描 |
 
 ---
 
-## v5.2.1 新特性
+## v5.3.0 新特性：典忆卫・闭环校验器
 
-### ⚡ SOUL 激活机制
+**Guard 不再只是一个红灯。它是监工。**
 
-安装后运行 `init.py`，选 Y → 在 SOUL.md 末尾写入一行 `[CMG v5.2.1]`。Hermes 每次对话读到这行自动加载护栏规则。
+当 Agent 跳过步骤想交差时，闭环校验器自动接管：
 
-- **一行激活**，删掉即停用
-- 扫盘时自动检测标记存在 + 版本匹配
-- 标记丢失 → 提醒恢复（数据不丢）
+```
+Agent: "差不多了，完成了"
+Guard:  ⛔ 拦截。剩余 3 步未完成。
 
-### 📋 推荐列表自动扫描
+       进入典忆卫・闭环校验器:
+       [1/3] 补充参考文献 → Agent执行 → ✅
+       [2/3] 格式检查     → Agent执行 → ✅
+       [3/3] 最终验证     → Agent执行 → ✅
 
-`init.py` 初始化时自动扫描 9 项推荐工具，检测安装/配置状态。`!scan-recommendations` 随时手动补扫。`!scan` 扫盘时自动包含推荐检测。
+       3/3 全部闭环，放行。
+```
 
-| 类别 | 推荐工具 |
-|------|---------|
-| 护栏执行 | ralph-loop · verification-before-completion · diagnose |
-| 调度联动 | idea-foundry（CMG 规则集注入代码生成） |
-| 成本优化 | rtk-rewrite（压缩 60-90% token） |
-| 规则扩展 | plur |
-| 跨线共享 | obsidian · karpathy-coding-guidelines |
-| 开发者 | hermes-agent-skill-authoring |
+- **零外部依赖** — 不用 ralph-loop、不写文件、不委派子 Agent
+- **典忆卫原生** — 用自己的规则体系、对话上下文、拦截器框架实现
+- **2 步以上自动触发** — 剩余步骤 ≥ 2 时进入逐步骤催办
+
+---
+
+## ⚡ SOUL 一行激活
+
+```bash
+python3 init.py
+# 选 Y → SOUL.md 写入: [CMG v5.3.0] 加载 canon-mnemonic-guard 护栏规则
+```
+
+---
+
+## 📋 推荐联动（全部验证通过）
+
+| 推荐 | 作用 | 验证 |
+|------|------|:--:|
+| rtk-rewrite | 压缩终端输出 60-90% token | ✅ |
+| plur | 扩展规则来源 | ✅ |
+| verification-before-completion | 证据先于断言 | ✅ |
+| diagnose | 五阶段诊断 + 根因分析 | ✅ |
+| ralph-loop | 进阶：跨会话项目级任务队列 | ✅ |
 
 ---
 
 ## 快速开始
 
 ```bash
-# 安装
 npx skills add canon-mnemonic-guard --yes --global
-
-# 初始化（自动扫描推荐列表 + 询问 SOUL 激活）
-python3 ~/.hermes/skills/software-development/canon-mnemonic-guard/scripts/init.py
+python3 init.py
 ```
 
-各线也可独立安装：
+---
 
-```bash
-npx skills add canon --yes --global
-npx skills add guard --yes --global
-npx skills add mnemonic --yes --global
-```
-
-### 命令速查
+## 命令速查
 
 | 命令 | 功能 |
 |------|------|
 | `!remember 禁止xxx` | 记录规则 |
 | `!scan` | 手动扫盘（含推荐检测） |
 | `!scan-recommendations` | 仅扫描推荐列表 |
-| `!solidify` | 手动触发固化 |
-| `!export` | 导出规则为 ZIP |
-| `!import <path>` | 从 ZIP 导入规则 |
+| `!solidify` | 手动触发规则固化 |
+| `!export` / `!import` | 导入导出规则集 |
 | `!log` | 三线协调日志 |
 | `!diagnose` | 一键诊断 |
-
----
-
-## 功能一览
-
-| 功能 | 所属 | 版本 |
-|------|------|------|
-| 三类错误系统 (ban/gap/lazy) | Canon | v1.0 |
-| 固化引擎 + 去重合并 | Canon | v1.0 |
-| Obsidian 结构化 rules/ | Canon | v2.0 |
-| 扫盘提取 (4 源) | Canon | v2.2 |
-| 可配置扫描源 + 白名单 | Canon | v2.3 |
-| 规则冲突检测与裁决 | Canon | v2.3 |
-| 规则效果评分 | Canon | v2.4 |
-| 角色声明制 | Canon | v2.4 |
-| 定时扫盘 (C1) | Canon | v2.5 |
-| 推荐列表自动扫描 | Canon | v2.5.1 |
-| SOUL 激活机制 | Canon | v2.5.2 |
-| 五层拦截器 | Guard | v4.0 |
-| 动态清单生成 (G2) | Guard | v4.5 |
-| 拦截效能分析 (G4) | Guard | v4.5 |
-| 上下文感知拦截 (G3) | Guard | v4.5 |
-| 自动模式识别 | Mnemonic | v3.1 |
-| 数据源降级链 (M1) | Mnemonic | v3.3 |
-| 独立持久化 (M2) | Mnemonic | v3.2 |
-| 健康检查 (E1) | Engine | v5.0.2 |
-| 协调日志 (E2) | Engine | v5.2.0 |
-| 一键诊断 (E3) | Engine | v5.2.0 |
-| 四包制分装 (E4) | Engine | v5.1.0 |
-| init 脚本 | Engine | v5.2.1 |
-
----
-
-## 架构
-
-```
-三省引擎 (CMG) v5.2.1 — 外观模式
-对外: role: guard, stage: pre_action
-内部:
-  ┌────────┐  ┌────────┐  ┌───────┐
-  │ 典则线  │  │ 护栏线  │  │ 忆存线 │
-  │Canon   │  │Guard   │  │Mnemonic│
-  │生产规则 │  │执行拦截 │  │模式识别 │
-  └────────┘  └────────┘  └───────┘
-  四模块严格独立，互不混合
-```
-
-全部配套采用添加式集成 — CMG 只读不写，第三方行为不受影响。
 
 ---
 
