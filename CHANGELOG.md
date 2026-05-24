@@ -4,6 +4,14 @@ All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
 
 ---
 
+## [5.3.2] — 2026-05-25
+
+- 同步 Guard v4.7.1 风险分级：hard 规则按操作类型自动分流
+- 不可逆操作（删除/覆盖/清空/改铁则库）→ clarify 暂停确认
+- 可自动修复（坐标/格式/行号/版本号）→ RetryLoop 自动重试
+
+---
+
 ## [5.3.0] — 2026-05-22
 
 ### 典忆卫・闭环校验器

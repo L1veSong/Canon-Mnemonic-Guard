@@ -1,10 +1,10 @@
 ---
 name: canon-mnemonic-guard
 description: 三省引擎 (CMG) — 取自「吾日三省吾身」。典则(规则生产)+护栏(拦截执行)+忆存(模式识别)三线合一外观模式。对外 role:guard stage:pre_action，内部三模块各自独立。
-version: 5.3.0
+version: 5.3.2
 role: guard
 dependencies: [canon, guard, mnemonic]
-_comment: "v5.3.0 SOUL激活: Canon v2.5.2 + Guard v4.6.0 + Mnemonic v3.3.0 + CMG外观。"
+_comment: "v5.3.2 同步Guard v4.7.1风险分级。Canon v2.6.0(规则分级+修正模板) + Guard v4.7.1(风险分级+闭环重试) + Mnemonic v3.4.0(2次推草稿)。"
 min_hermes_version: any
 platforms: [linux, macos, windows]
 author: L1veSong
@@ -15,7 +15,7 @@ metadata:
     related_skills: [canon, guard, mnemonic]
 ---
 
-# 三省引擎 (CMG) v5.3.0 — 四包制外观引擎
+# 三省引擎 (CMG) v5.3.2 — 四包制外观引擎
 
 > **对外身份**: guard (护栏) | **阶段**: pre_action | **中文名**: 三省引擎，取自「吾日三省吾身」
 > **CMG = Canon-Mnemonic-Guard = 典则·忆存·护栏**
@@ -28,7 +28,8 @@ metadata:
 
 | 版本 | 变更 |
 |------|------|
-| v5.2.1 | +SOUL 激活机制: init时询问是否写一行 `[CMG v5.2.1]` 到 SOUL.md。扫盘时自动检测标记存在+版本匹配。用户删标记即停用。Canon v2.5.2 |
+| v5.3.2 | +同步Guard v4.7.1风险分级: hard规则按操作类型分流——不可逆暂停确认，可自动修复自动重试 |
+| v5.2.1 | +SOUL 激活机制: init时询问是否写一行 `[CMG v5.3.1]` 到 SOUL.md。扫盘时自动检测标记存在+版本匹配。用户删标记即停用。Canon v2.6.0 |
 | v5.2.0 | +C1 定时扫盘(Canon v2.5.1) +G2/G3/G4 动态清单+上下文感知+效能分析(Guard v4.5.0) +M1 数据源降级链(Mnemonic v3.3.0) +E2 协调日志(!log) +E3 一键诊断(!diagnose) +推荐列表自动扫描(!scan-recommendations)。7项功能，四包同步升版。 |
 | v5.1.0 | 四包制分装: Canon v2.4.1 + Guard v4.4.0 + Mnemonic v3.2.0 独立Skill包 + CMG外观索引 |
 | v2.3.1 | + 规则冲突检测: 写入前扫描同类型规则 / + 冲突裁决: clarify四选一(A保留新/B保留旧/C都留标记/D编辑) / + 自动裁决: 明确指定>最近使用>更严格 |
@@ -109,7 +110,7 @@ tags: [分类标签]
 **注入格式:**
 ```
 ═══════════════════════════════════════
-三省引擎 v5.2.1 · 永久规则 (自动注入)
+三省引擎 v5.3.2 · 永久规则 (自动注入)
 ═══════════════════════════════════════
 [从 rules/_index.md 的表格 + 各规则的 frontmatter 摘要]
 ═══════════════════════════════════════
@@ -149,7 +150,7 @@ tags: [分类标签]
 
 ### 6. 输出激活状态
 
-**必须输出**: "三省引擎 v5.2.1 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。典则·护栏·忆存。四包制。"
+**必须输出**: "三省引擎 v5.3.2 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。典则·护栏·忆存。四包制。"
 
 ---
 
@@ -618,7 +619,7 @@ v1.0.0 缺乏跨会话状态：
 
 ```
 ═══════════════════════════════════════
-CMG v5.2.0 协调日志
+CMG v5.3.2 协调日志
 ═══════════════════════════════════════
 📋 Canon 典则线 (v2.5.0)
   规则: 10条 (ban:6 / gap:2 / lazy:2)
@@ -672,8 +673,12 @@ CMG v5.2.0 协调日志
    - frontmatter 是否可解析（YAML 语法）
    - type 字段是否匹配所在目录（ban/ → type: ban）
    - keywords 字段是否非空
-3. 检查 _index.md 表格行数是否匹配实际文件数
-4. 发现不一致 → 输出警告 + 差异详情
+   - [v2.6.0+] level 字段是否存在且值为 hard/soft/monitor
+   - [v2.6.0+] correction_template 字段是否存在（hard 规则必须非空）
+3. 统计覆盖率: 有完整 frontmatter 的 / 缺少字段的 → 输出摘要
+4. 可选: 运行 `python3 ~/.hermes/skills/software-development/canon/scripts/check-frontmatter.py` 获取详细清单
+5. 检查 _index.md 表格行数是否匹配实际文件数
+6. 发现不一致 → 输出警告 + 差异详情
 ```
 
 #### Phase 3: 跨模块引用一致性
@@ -711,7 +716,7 @@ CMG v5.2.0 协调日志
 
 ```
 ═══════════════════════════════════════
-CMG v5.2.0 诊断报告
+CMG v5.3.2 诊断报告
 ═══════════════════════════════════════
 📁 文件完整性: ✅ 5/5 通过
    rules/ ✓  state.json ✓  patterns.json ✓
@@ -731,7 +736,7 @@ CMG v5.2.0 诊断报告
    Mnemonic 数据源: guard_intercept (正常，none占比 0%)
 
 📦 子包版本: ✅ 一致
-   canon v2.5.0 / guard v4.5.0 / mnemonic v3.3.0
+   canon v2.6.0 / guard v4.7.1 / mnemonic v3.4.0
 
 🎯 总体状态: 🟢 健康
    建议: 规则 rule_007 60天未触发，可在下次固化工单中复核。
@@ -966,6 +971,15 @@ v5.0.0 合并时误将统一外观命名为 `self-reflection-engine`——这是
 
 ---
 
+## v5.4.0 改进方向（外部评审）
+
+四条优化建议经 DeepSeek 评审，详见 `references/v5.4.0-improvement-directions.md`：
+- 规则分级 hard/soft/monitor（★★★★★）
+- 同会话重复快速升级（★★★★☆）
+- Mnemonic 2次推草稿（★★★★★）
+- 用户纠正提升一级非直接 hard（★★★☆☆）
+- 额外：误报降级、场景感知、规则有效期
+
 ## 版本路线
 
 ### 三大模块化引擎（完全独立，无寄生）
@@ -984,7 +998,7 @@ v5.0.0 合并时误将统一外观命名为 `self-reflection-engine`——这是
 
 > **定位：** 规则生产库。典则线仅输出标准化规则，不含任何拦截、校验、执行逻辑。
 
-**v5.2.0 (当前):** 四包制(Canon v2.5.0/Guard v4.5.0/Mnemonic v3.3.0独立+CMG外观) / 16/17项完成 / E2+E3运维闭环
+**v5.4.0-alpha (当前):** 四包制(Canon v2.6.0/Guard v4.7.1/Mnemonic v3.4.0独立+CMG外观)
 
 ---
 
