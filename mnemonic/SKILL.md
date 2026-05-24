@@ -1,7 +1,7 @@
 ---
 name: mnemonic
-description: 三省引擎(CMG)忆存线 (Mnemonic) — 状态记忆层。读取 Guard 拦截日志，自动识别高频错误模式，生成规则草稿推送至 Canon 固化引擎。纯记忆状态层，不生产规则不执行拦截。
-version: 3.3.0
+description: 三省引擎(CMG)忆存线 (Mnemonic) — 状态记忆层。v3.4.0 模式识别加速(同会话2次推草稿，原7天3次)。纯记忆状态层，不生产规则不执行拦截。
+version: 3.4.0
 role: memory
 stage: background
 dependencies: []
@@ -61,18 +61,18 @@ metadata:
    - 存在且非空 → data_source = "guard_intercept"
      → 加载最近 7 天拦截记录
      → 分组统计关键词频次
-     → 输出: "Mnemonic v3.3.0: 数据源=Guard拦截日志（{N}条/7天）"
+     → 输出: "Mnemonic v3.4.0: 数据源=Guard拦截日志（{N}条/7天）"
 
 2. 不存在或为空 → 降级检查 errors.jsonl
    - 存在且非空 → data_source = "canon_errors"
      → 加载全部错误记录（无时间窗口限制，因 errors.jsonl 永久追加）
      → 分组统计关键词频次
-     → 输出: "Mnemonic v3.3.0: 数据源=Canon错误记录（降级，{N}条总计）。等待 Guard 拦截日志积累后自动切换。"
+     → 输出: "Mnemonic v3.4.0: 数据源=Canon错误记录（降级，{N}条总计）。等待 Guard 拦截日志积累后自动切换。"
 
 3. 两个都不存在或都为空 → data_source = "none"
    - 跳过模式识别
    - 仍正常加载 mnemonic_state.json 和 state.json
-   → 输出: "Mnemonic v3.3.0: 数据源=等待中（无拦截日志，无错误记录）。模式识别暂停。"
+   → 输出: "Mnemonic v3.4.0: 数据源=等待中（无拦截日志，无错误记录）。模式识别暂停。"
 ```
 
 **关键：** 不报错、不崩溃、不空转。无论数据源状态如何，Mnemonic 正常激活，只是模式识别能力随数据可用性动态调整。
@@ -87,7 +87,7 @@ metadata:
 
 ### 4. 输出激活状态
 
-**必须输出**: "Mnemonic v3.3.0 已激活。数据源: {guard_intercept/canon_errors/none}。近 7 天拦截 {N} 次。模式识别: {on/degraded/off}。"
+**必须输出**: "Mnemonic v3.4.0 已激活。数据源: {guard_intercept/canon_errors/none}。近 7 天拦截 {N} 次。模式识别: {on/degraded/off}。"
 
 ---
 
@@ -95,8 +95,17 @@ metadata:
 
 ### 触发条件
 
-主数据源：同一关键词在 `intercept_log.jsonl` 中 7 天内出现 ≥ 3 次。
-降级数据源：同一关键词在 `errors.jsonl` 中出现 ≥ 5 次（阈值更高，因 errors.jsonl 无时间窗口）。
+**v3.4.0 加速：**
+
+| 场景 | 阈值 | 行为 |
+|------|:---:|------|
+| **同会话** | 同类违规 ≥ 2 次 | 立即推草稿 + 用户确认 |
+| **跨会话** | 7 天内累计 ≥ 2 次 | 推草稿 + 用户确认 |
+| **主数据源** | 同一 rule_id 被 RetryLoop 超限 ≥ 2 次 | 自动推草稿（标记为待复核） |
+
+**降级数据源（errors.jsonl）：** 阈值仍为 ≥ 5 次（无时间窗口，因 errors.jsonl 永久追加）。
+
+**防噪音：** 每次推送带置信度评分。同会话2次→置信度0.7，跨会话7天2次→置信度0.5。置信度<0.5的草稿仅记录不推送。
 
 ### 识别流程
 

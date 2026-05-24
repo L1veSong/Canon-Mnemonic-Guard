@@ -1,7 +1,7 @@
 ---
 name: canon
-description: 三省引擎(CMG)典则线 (Canon) — 规则生产库。负责规则来源、固化、存储、效果评分。纯静态规则层，不执行拦截、不存记忆。
-version: 2.5.2
+description: 三省引擎(CMG)典则线 (Canon) — 规则生产库。v2.6.0 新增规则分级(hard/soft/monitor) + 修正模板(correction_template)。纯静态规则层，不执行拦截、不存记忆。
+version: 2.6.0
 role: producer
 stage: system_anchor
 dependencies: []
@@ -151,7 +151,7 @@ metadata:
    3. 这是首次在新设备上使用 CMG
 
    是否重新写入激活标记？
-     [Y] 恢复 — 重新写入 [CMG v5.2.1] 加载 canon-mnemonic-guard 护栏规则
+     [Y] 恢复 — 重新写入 [CMG v5.3.1] 加载 canon-mnemonic-guard 护栏规则
      [N] 跳过 — 护栏保持停用，下次扫盘再提醒
 
    选择 [Y/n]:
@@ -167,7 +167,7 @@ metadata:
 
 ### 7. 输出激活状态
 
-**必须输出**: "Canon v2.5.2 已激活。{N} 条规则（{ban}/{gap}/{lazy}）。距上次扫盘 {D} 天。定时扫盘: {on/off}（间隔 {X} 天）。"
+**必须输出**: "Canon v2.6.0 已激活。{N} 条规则（{ban}/{gap}/{lazy}）。距上次扫盘 {D} 天。定时扫盘: {on/off}（间隔 {X} 天）。"
 
 ---
 
@@ -180,6 +180,83 @@ metadata:
 ## 冲突检测
 
 新规则写入前扫描同类型规则。跨类型检测（ban↔gap↔lazy）已启用。冲突时 clarify 四选一裁决。
+
+---
+
+## 规则分级 (v2.6.0)
+
+> v2.6.0 新增。所有规则必须标注级别，Guard 根据级别决定拦截策略。
+
+### 三级定义
+
+| 级别 | 拦截行为 | 重试策略 | 设置方式 | 适用场景 |
+|------|---------|---------|---------|---------|
+| **hard** | 立即拦截 | 自动重试直到修正 | `!remember --hard` | 数学错误、安全违规、API错用 |
+| **soft** | 提醒后放行 | 提醒1次，不重试 | `!remember --soft`（默认） | 启发式建议、可协商规则 |
+| **monitor** | 不拦截 | 纯计数+报告 | `!monitor` | 观察性规则、实验性规则 |
+
+### 规则 frontmatter 新增字段
+
+```yaml
+---
+type: ban
+id: rule_xxx
+level: hard        # ← v2.6.0 新增：hard / soft / monitor
+correction_template: "具体修正方向"  # ← v2.6.0 新增
+---
+```
+
+### 修正模板 (correction_template)
+
+每条 **hard** 规则必须配置。Guard 拦截后注入此模板到 RetryLoop，告诉 AI 怎么改。
+
+**格式要求：**
+- 一句话说明修正方向（不要太长，避免上下文膨胀）
+- 给出具体操作指令（不是原则性描述）
+
+**示例：**
+
+```yaml
+# 好：具体可执行
+correction_template: "所有 OCR 坐标必须除以 2。请将你输出的所有坐标数值全部除以 2 后再输出。"
+
+# 好：给出替换方案
+correction_template: "禁止 pyautogui.hotkey('cmd','v')。请替换为 osascript keystroke 'v' using command down。"
+
+# 差：只说了违规没说怎么改
+correction_template: "不要用 pyautogui hotkey。"
+
+# 差：太长了
+correction_template: "关于 pyautogui 的 hotkey 功能，在 macOS 环境下，由于系统权限和输入法限制，Cmd 修饰键有概率丢失..."
+```
+
+**未配置的 hard 规则：** Guard 使用通用回退——"你的回答违反了规则：{rule_name}。请遵守该规则重新生成。"
+
+### 用户纠正时的级别调整
+
+```
+用户纠正某规则 → 该规则提升一级: monitor→soft, soft→hard
+hard 不再升级（已是最高）
+当前会话内强化、跨会话恢复原级（除非再次纠正）
+```
+
+### 级别迁移记录
+
+规则 frontmatter 新增字段追踪级别变化：
+
+```yaml
+level_history:
+  - {from: soft, to: hard, reason: "用户纠正", date: "2026-05-23"}
+```
+
+### `!remember` 增强
+
+```
+!remember "禁止xxx"              → 默认 soft
+!remember --hard "禁止xxx"       → hard
+!remember --soft "注意xxx"       → soft（冗余，但明确）
+!monitor "观察xxx"               → monitor
+```
 
 ---
 
@@ -329,7 +406,7 @@ npx canon-mnemonic-guard init
 
 是否在 SOUL.md 中写入激活标记（一行），让护栏规则在每次对话中自动生效？
 
-  [Y] 是 — 写入一行: [CMG v5.2.1] 加载 canon-mnemonic-guard 护栏规则
+  [Y] 是 — 写入一行: [CMG v5.3.1] 加载 canon-mnemonic-guard 护栏规则
   [N] 否 — 跳过，用 !scan 手动触发
 
 选择 [Y/n]: 
@@ -342,7 +419,7 @@ npx canon-mnemonic-guard init
 ### 激活标记格式
 
 ```
-[CMG v5.2.1] 加载 canon-mnemonic-guard 护栏规则
+[CMG v5.3.1] 加载 canon-mnemonic-guard 护栏规则
 ```
 
 这是 SOUL.md 中普通的一行文本。你可以随时手动删除——删掉后护栏不再自动生效。下一次扫盘时会检测到缺失并提醒。

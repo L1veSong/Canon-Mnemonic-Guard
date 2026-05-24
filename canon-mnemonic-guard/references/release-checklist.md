@@ -1,0 +1,105 @@
+# 发布自检清单
+
+每次版本发布前，逐项确认。跳过任一项即视为未完成发布。
+
+---
+
+## 版本号同步（四包制 · 17 处）
+
+v5.2.0 起，CMG 不再是单文件发布——四个独立 Skill 包须同步升版。
+
+### CMG 外观层（本仓库 · 6 处）
+
+- [ ] `SKILL.md` frontmatter `version`
+- [ ] `SKILL.md` `_comment` 行→子包版本号与实际一致
+- [ ] `SKILL.md` 标题（`# 三省引擎 (CMG) vX.X.X`）
+- [ ] `SKILL.md` 注入格式消息（`三省引擎 vX.X.X · 永久规则`）
+- [ ] `SKILL.md` 激活消息（`三省引擎 vX.X.X 已激活`）
+- [ ] `SKILL.md` 典则线「当前」标注更新
+- [ ] `README.md` 标题 + Badge 版本号
+
+### 子包独立验证（每个子包 2 处，共 6 处）
+
+- [ ] `canon/SKILL.md` frontmatter `version`
+- [ ] `canon/SKILL.md` 激活消息版本号
+- [ ] `guard/SKILL.md` frontmatter `version`
+- [ ] `guard/SKILL.md` 激活消息版本号
+- [ ] `mnemonic/SKILL.md` frontmatter `version`
+- [ ] `mnemonic/SKILL.md` 激活消息版本号
+
+### 跨文件残留扫描（5 处）
+
+- [ ] CMG 文件中无上一版 major 版本号残留（历史表格除外）
+- [ ] Canon 文件中无上一版版本号残留（历史表格除外）
+- [ ] Guard 文件中无上一版版本号残留（历史表格除外）
+- [ ] Mnemonic 文件中无上一版版本号残留（历史表格除外）
+- [ ] CMG `_comment` 声明的子包版本号 = grep 子包 SKILL.md 的实际版本号
+
+**验证命令（一键跑完）：**
+```bash
+echo "=== 子包版本号 ===" && \
+for skill in canon guard mnemonic; do \
+  echo -n "$skill: " && grep "version:" ~/.hermes/skills/software-development/$skill/SKILL.md | head -1; \
+done && \
+echo "=== CMG 外观层 ===" && \
+grep "version:" ~/.hermes/skills/software-development/canon-mnemonic-guard/SKILL.md | head -1 && \
+echo "=== CMG _comment ===" && \
+grep "_comment" ~/.hermes/skills/software-development/canon-mnemonic-guard/SKILL.md | head -1 && \
+echo "=== 旧版残留扫描 ===" && \
+echo "Canon:" && grep -c "2\.4\.[0-9]" ~/.hermes/skills/software-development/canon/SKILL.md ~/.hermes/skills/software-development/canon-mnemonic-guard/SKILL.md && \
+echo "Guard:" && grep -c "4\.[0-3]\.[0-9]" ~/.hermes/skills/software-development/guard/SKILL.md ~/.hermes/skills/software-development/canon-mnemonic-guard/SKILL.md && \
+echo "Mnemonic:" && grep -c "3\.[0-2]\.[0-9]" ~/.hermes/skills/software-development/mnemonic/SKILL.md ~/.hermes/skills/software-development/canon-mnemonic-guard/SKILL.md
+```
+
+---
+
+## 内容自洽（4 处）
+
+- [ ] `SKILL.md` 版本变更表新增当前版本条目
+- [ ] `SKILL.md` 典则线「当前」标注更新
+- [ ] `CHANGELOG.md` 新增当前版本条目
+- [ ] `README.md` 内容反映当前版本状态（非旧版「规划中」等描述）
+
+---
+
+## 测试（3 项）
+
+- [ ] `skill_view` 加载四个 Skill 均成功
+- [ ] `readiness_status: available`
+- [ ] `setup_needed: false`
+
+## 健康检查（E1 · v5.2.0 新增）
+
+发布前运行 E1 健康检查，确保核心文件就绪：
+
+```bash
+REFLECT_DIR="$HOME/.hermes/self-reflection"
+echo "rules/:" && [ -d "$REFLECT_DIR/rules" ] && echo "  OK" || echo "  MISSING"
+echo "state.json:" && [ -f "$REFLECT_DIR/state.json" ] && echo "  OK" || echo "  MISSING"
+echo "patterns.json:" && [ -f "$REFLECT_DIR/patterns.json" ] && echo "  OK" || echo "  MISSING"
+echo "intercept_log.jsonl:" && [ -f "$REFLECT_DIR/intercept_log.jsonl" ] && echo "  OK" || echo "  MISSING (首次运行后自动创建)"
+echo "mnemonic_state.json:" && [ -f "$REFLECT_DIR/mnemonic_state.json" ] && echo "  OK" || echo "  MISSING (首次运行后自动创建)"
+```
+
+mnemonic_state.json 缺失不阻塞发布——Mnemonic 首次加载时自动初始化。
+
+---
+
+## 打包
+
+- [ ] `zip -r ~/Desktop/Canon-Mnemonic-Guard-vX.X.X.zip . -x ".git/*"`
+- [ ] 确认 ZIP 文件存在且大小 > 1KB
+
+---
+
+## 历史教训
+
+> 本清单之所以存在，是因为 v2.2.9 → v5.0.0 期间多次发布时 README 标题、注入/激活消息、CHANGELOG 滞后。纯粹靠脑子记不可靠，必须逐项打勾。
+
+### v5.2.0 新增教训
+
+1. **`patch` 工具引号陷阱：** 当 old_string/new_string 中包含 `\"`（反斜杠转义引号）时，`patch` 工具报 "Escape-drift detected"。解法：用 `read_file` 确认文件中的实际字符（通常是未转义的 `"`），然后在 old_string/new_string 中直接使用未转义引号。不要预判文件内容——先读再写。
+
+2. **四包制版本号不在脑子：** v5.2.0 发布时，CMG SKILL.md 中 3 处硬编码 `v5.1.0`（注入消息、激活消息、典则线「当前」标记）在 frontmatter 更新后仍然滞留。单靠 `grep version:` 不够——`grep` 只命中 frontmatter 行。必须额外 grep 全文的旧 major 版本号（如 `5\.1\.0`）来找这些散落的硬编码。
+
+3. **多文件残留扫描是必须的，不是可选的：** 四包同步升版时，每个子包 SKILL.md 的版本号由 skill_manage 正确更新，但 CMG 外观层内部的子包版本引用（`_comment` 行、版本路线章节）需要手动 grep 确认一致。
