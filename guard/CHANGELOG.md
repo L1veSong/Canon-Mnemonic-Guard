@@ -1,5 +1,15 @@
 # Guard 护栏线 — 版本变更日志
 
+## [4.8.1] — 2026-05-25
+
+### 补全
+
+- **P2 补全**：intercept_log.jsonl 新增 session_id 字段
+- **Mnemonic 联动钩子**：Guard 拦截后自动通知 Mnemonic 同会话计数
+- 与 Mnemonic v3.5.1 联动对接
+
+---
+
 ## [4.8.0] — 2026-05-25
 
 ### 新增

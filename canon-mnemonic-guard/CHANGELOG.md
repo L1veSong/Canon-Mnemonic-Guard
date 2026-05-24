@@ -4,6 +4,52 @@ All notable changes to Canon Mnemonic Guard (原 hermes-self-reflection).
 
 ---
 
+## [5.5.0] — 2026-05-25
+
+### 微型调度器
+
+- **场景→配套自动映射**：Guard 拦截时自动匹配推荐 skill，提示加载
+- 映射表：过设计→karpathy / 跳步骤→ralph-loop / 声称完成→VBC / 连续命中→diagnose
+- 轻量版中控调度，完整的中央调度器在 roadmap 中作为独立项目
+
+### 子包版本
+
+- Canon / Guard / Mnemonic 不变
+
+---
+
+## [5.4.2] — 2026-05-25
+
+### 补丁：M3 清零
+
+- **!patterns**：查看 Mnemonic 识别的重复违规模式（本会话命中/7天命中/推荐操作）
+- **!datasource**：查看当前数据源状态和切换历史
+- 待优化表 17 项全部清零，CMG 功能闭环
+
+### 子包版本
+
+- Mnemonic v3.5.1 → v3.5.2
+- Canon / Guard 不变
+
+---
+
+## [5.4.1] — 2026-05-25
+
+### 补丁：P2 补全
+
+- **P2 Mnemonic 加速模式识别**：Guard 拦截日志新增 session_id + Mnemonic联动钩子
+- Guard→Mnemonic：同会话第2次命中自动通知推草稿
+- Mnemonic session_tracking：mnemonic_state.json 新增同会话推送去重
+- Canon 草稿快速通道：加速接收 Mnemonic 推送
+
+### 子包版本
+
+- Canon v2.7.0 → v2.7.1
+- Guard v4.8.0 → v4.8.1
+- Mnemonic v3.5.0 → v3.5.1
+
+---
+
 ## [5.4.0] — 2026-05-25
 
 ### 大更：四大增强

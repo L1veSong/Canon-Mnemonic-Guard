@@ -1,7 +1,7 @@
-# Guard 护栏线 — v4.8.0
+# Guard 护栏线 — v4.8.1
 
 > 三省引擎(CMG) 护栏线。读取 Canon 规则库，独立执行五层 pre_action 前置拦截。
-> **v4.8.0 上下文升级增强 + 用户纠正自动提升。**
+> **v4.8.1 P2补全：session_id追踪 + Mnemonic联动钩子。** v4.8.0 上下文升级增强 + 用户纠正自动提升。
 
 ## 核心能力
 
@@ -13,7 +13,14 @@
 | 4 | SkillLoadInterceptor | 防偷懒（Skill是否加载） |
 | 5 | ClarifyInterceptor | 防瞎猜（是否调用clarify） |
 
-## v4.8.0 新增
+## v4.8.1 补全
+
+### P2 补全：session追踪 + Mnemonic联动
+- intercept_log.jsonl 新增 session_id 字段
+- Guard 拦截后自动通知 Mnemonic 同会话计数
+- 与 Mnemonic v3.5.1 P2 session追踪联动
+
+## v4.8.0 新增（已发布）
 
 ### 上下文升级增强
 - 同会话第2次命中即升级为 block（原3次）
@@ -44,5 +51,6 @@ npx skills add guard --yes --global
 | v4.7.0 | 闭环重试引擎 |
 | v4.7.1 | 风险分级 |
 | **v4.8.0** | **上下文升级增强 + 用户纠正提升** |
+| **v4.8.1** | **P2补全：session追踪 + Mnemonic联动** |
 
 MIT · [L1veSong](https://github.com/L1veSong)

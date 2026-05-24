@@ -1,7 +1,7 @@
 ---
 name: guard
-description: 三省引擎(CMG)护栏线 (Guard) — 规则执行器。读取 Canon 规则库 + Mnemonic 状态，独立执行五层 pre_action 前置拦截。v4.8.0 增强上下文升级(2次触发+半衰期衰减) + 用户纠正自动提升规则级别。v4.7.0 新增闭环重试引擎，v4.7.1 新增风险分级。纯执行校验层，不生产规则不存记忆。
-version: 4.8.0
+description: 三省引擎(CMG)护栏线 (Guard) — 规则执行器。读取 Canon 规则库 + Mnemonic 状态，独立执行五层 pre_action 前置拦截。v4.8.1 新增 session_id追踪 + Mnemonic联动钩子(P2补全)。v4.8.0 增强上下文升级+用户纠正自动提升。纯执行校验层，不生产规则不存记忆。
+version: 4.8.1
 role: guard
 stage: pre_action
 dependencies: []
@@ -15,11 +15,11 @@ metadata:
     related_skills: [canon, mnemonic, canon-mnemonic-guard]
 ---
 
-# Guard 护栏线 v4.8.0
+# Guard 护栏线 v4.8.1
 
 > **角色**: guard (规则执行器) | **阶段**: pre_action (每次行动前) | **位置**: Canon 之后，所有执行之前
 >
-> 三省引擎(CMG)护栏线，从 CMG v2.4.1 剥离独立。读取 Canon 的 rules/ 目录作为规则源，读取 Mnemonic 的 state.json 感知上下文。
+> v4.8.1 P2补全：intercept_log 新增 session_id 字段，Guard→Mnemonic 联动钩子。三省引擎(CMG)护栏线，从 CMG v2.4.1 剥离独立。读取 Canon 的 rules/ 目录作为规则源，读取 Mnemonic 的 state.json 感知上下文。
 
 ---
 
@@ -41,6 +41,7 @@ metadata:
 
 | 版本 | 变更 |
 |------|------|
+| v4.8.1 | +P2补全: intercept_log新增session_id字段 + Mnemonic联动钩子 + 与Mnemonic v3.5.1联动 |
 | v4.8.0 | +上下文升级增强: 2次即升级(原3次) + 半衰期衰减(24h计数减半) + repeat_tolerance可配置 + 用户纠正自动提升规则级别 |
 | v4.7.0 | +闭环重试引擎: 拦截后自动注入修正方向 → AI重生成 → 再检 → 合格放行 |
 | v4.6.0 | +典忆卫・闭环校验器: StepCompleteness拦截后自动逐步骤催办，直到全部闭环。零外部依赖。 |
@@ -62,7 +63,7 @@ metadata:
 
 | 方式 | 自动 | 操作 |
 |------|:---:|------|
-| **SOUL 激活标记**（推荐） | ✅ | CMG init 时选 Y → 在 SOUL.md 末尾写入 `[CMG v5.4.0-alpha] 加载 canon-mnemonic-guard 护栏规则`。Hermes 读到这行后自动加载 CMG → Guard 生效。 |
+| **SOUL 激活标记**（推荐） | ✅ | CMG init 时选 Y → 在 SOUL.md 末尾写入 `[CMG v5.5.0] 加载 canon-mnemonic-guard 护栏规则`。Hermes 读到这行后自动加载 CMG → Guard 生效。 |
 | `/skill guard` | ❌ | 每次新会话手动输入 |
 | `hermes -s guard` | ❌ | 启动时命令行指定 |
 
@@ -173,7 +174,7 @@ Guard 加载后检查 SOUL.md 是否存在 `[CMG v` 标记：
 
 ### 7. 输出激活状态
 
-**必须输出**: "Guard v4.8.0 已激活。读取 Canon {N} 条规则。风险分级: 就绪（不可逆暂停确认，可自动修复自动重试）。上下文升级: 2次触发 + 半衰期衰减(24h)。用户纠正提升: 就绪。效能分析: {X} 条规则正常 / {Y} 条降级 / {Z} 条过期。上下文感知: {重复检测/赶工检测/轻量模式} 就绪。动态清单: {论文类K项/代码类L项/通用类M项}。"
+**必须输出**: "Guard v4.8.1 已激活。读取 Canon {N} 条规则。风险分级: 就绪。上下文升级: 2次触发+半衰期衰减(24h)。用户纠正提升: 就绪。P2联动: session_id追踪+Mnemonic钩子就绪。效能分析: {X}条正常/{Y}条降级/{Z}条过期。上下文感知: 就绪。动态清单: {论文K/代码L/通用M}项。"
 
 ---
 
@@ -564,12 +565,35 @@ Guard 加载时已执行效能分析。运行时额外：
 每次拦截写入 `intercept_log.jsonl`：
 
 ```json
-{"ts":"ISO8601","interceptor":"Ban","rule_id":"rule_001","action":"block","reason":"关键词匹配: 虚构","context":"用户要求输出一个不存在的API","mode":"full","context_level":"normal"}
+{"ts":"ISO8601","session_id":"20260525_xxx","interceptor":"Ban","rule_id":"rule_001","action":"block","reason":"关键词匹配: 虚构","context":"用户要求输出一个不存在的API","mode":"full","context_level":"normal"}
 ```
+
+v4.8.1 新增字段:
+- `session_id`: 当前会话唯一标识，Mnemonic 按此字段分组统计同会话命中次数
 
 v4.5.0 新增字段:
 - `mode`: `full`（五层全跑）或 `lightweight`（仅第一层）
 - `context_level`: `normal` / `escalated`（上下文升级）
+
+### Mnemonic 联动钩子（v4.8.1）
+
+> **P2补完。** Guard 每次写入 intercept_log.jsonl 后，自动通知 Mnemonic 更新同会话计数。
+
+**写入拦截日志后的自动流程：**
+
+```
+1. Guard 写入 intercept_log.jsonl（含 session_id + rule_id）
+2. Guard 读取 mnemonic_state.json → session_tracking 字段
+3. 当前 session_id 下同一 rule_id 累计命中次数:
+   - 第 1 次 → 仅记录，不触发
+   - 第 2 次 → 触发 Mnemonic 同会话推草稿逻辑
+4. 更新 mnemonic_state.json: session_tracking.per_rule_session_hits
+```
+
+**与 P1 上下文升级的关系：**
+- P1（v4.8.0）：同会话第 2 次命中 → Guard 自身升级拦截（warn → block）
+- P2（v4.8.1）：同会话第 2 次命中 → Guard 通知 Mnemonic → Mnemonic 推草稿
+- 两者互补：P1 负责拦截，P2 负责固化。同一事件触发两个动作。
 
 ---
 

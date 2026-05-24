@@ -1,7 +1,7 @@
 ---
 name: canon
-description: 三省引擎(CMG)典则线 (Canon) — 规则生产库。v2.7.0 新增误报自动降级 + 规则有效期(--expires)。v2.6.0 新增规则分级(hard/soft/monitor) + 修正模板(correction_template)。纯静态规则层，不执行拦截、不存记忆。
-version: 2.7.0
+description: 三省引擎(CMG)典则线 (Canon) — 规则生产库。v2.7.1 补全P2草稿快速通道(接收Mnemonic同会话推送)。v2.7.0 新增误报自动降级 + 规则有效期。纯静态规则层，不执行拦截、不存记忆。
+version: 2.7.1
 role: producer
 stage: system_anchor
 dependencies: []
@@ -15,7 +15,7 @@ metadata:
     related_skills: [guard, mnemonic, canon-mnemonic-guard]
 ---
 
-# Canon 典则线 v2.7.0 — 规则生产库
+# Canon 典则线 v2.7.1 — 规则生产库
 
 > **角色**: producer (规则生产锚点) | **阶段**: system_anchor (系统锚点层)
 >
@@ -45,6 +45,7 @@ metadata:
 
 | 版本 | 变更 |
 |------|------|
+| v2.7.1 | +P2补全: 草稿快速通道(接收Mnemonic同会话推送) + 与Mnemonic v3.5.1联动 |
 | v2.7.0 | +误报自动降级(连续否决≥3次→降soft) + 规则有效期(!remember --expires 7d) |
 | v2.6.0 | +规则分级(hard/soft/monitor) + 修正模板(correction_template) + 用户纠正级别调整 + level_history追踪 |
 | v2.5.1 | +推荐列表自动扫描: config.json recommendations + !scan-recommendations + plugins 扫描源 |
@@ -152,7 +153,7 @@ metadata:
    3. 这是首次在新设备上使用 CMG
 
    是否重新写入激活标记？
-     [Y] 恢复 — 重新写入 [CMG v5.3.1] 加载 canon-mnemonic-guard 护栏规则
+     [Y] 恢复 — 重新写入 [CMG v5.5.0] 加载 canon-mnemonic-guard 护栏规则
      [N] 跳过 — 护栏保持停用，下次扫盘再提醒
 
    选择 [Y/n]:
@@ -168,7 +169,7 @@ metadata:
 
 ### 7. 输出激活状态
 
-**必须输出**: "Canon v2.6.0 已激活。{N} 条规则（{ban}/{gap}/{lazy}）。距上次扫盘 {D} 天。定时扫盘: {on/off}（间隔 {X} 天）。"
+**必须输出**: "Canon v2.7.1 已激活。{N} 条规则（{ban}/{gap}/{lazy}）。距上次扫盘 {D} 天。定时扫盘: {on/off}（间隔 {X} 天）。"
 
 ---
 
@@ -441,13 +442,11 @@ python3 ~/.hermes/skills/software-development/canon/scripts/fill-frontmatter.py 
 
 **处理：** 扫描后发现 gap/lazy 中非规则文件 → 移至独立分类或标注 `level: meta`，避免 Guard 误读。
 
-### 坑点 4: 批量修复 frontmatter 后必须重建 _index.md
+### 坑点 3: 批量修复 frontmatter 的风险
 
-52 条规则全部补完 level + correction_template 后，`_index.md` 可能仍然显示旧状态。**每次批量修改规则 frontmatter 后，必须重建索引。**
+一次性脚本批量写入 39 条 frontmatter 极易出现格式错位、level 推断错误。
 
-**验证：** `execute_code` 扫描所有规则文件 → 确认 `_index.md` 表格行数 = 实际文件数，且 level 列全部更新。
-
-详见 `references/rule-frontmatter-batch-fix.md`（2026-05-25 实战记录：52 条规则从 25% 覆盖率修复到 100%）。
+**正确做法：** 三步走——(1) 先重建 _index.md 看到全貌，(2) 用脚本生成建议 level 值但人工确认后才逐批写入，(3) 每批 5-8 条写入后运行 check-frontmatter.py 验证。
 
 ### 坑点 4: unknown 空壳规则 — 数据丢了不能编造
 
@@ -504,7 +503,7 @@ npx canon-mnemonic-guard init
 
 是否在 SOUL.md 中写入激活标记（一行），让护栏规则在每次对话中自动生效？
 
-  [Y] 是 — 写入一行: [CMG v5.3.1] 加载 canon-mnemonic-guard 护栏规则
+  [Y] 是 — 写入一行: [CMG v5.5.0] 加载 canon-mnemonic-guard 护栏规则
   [N] 否 — 跳过，用 !scan 手动触发
 
 选择 [Y/n]: 
@@ -517,7 +516,7 @@ npx canon-mnemonic-guard init
 ### 激活标记格式
 
 ```
-[CMG v5.3.1] 加载 canon-mnemonic-guard 护栏规则
+[CMG v5.5.0] 加载 canon-mnemonic-guard 护栏规则
 ```
 
 这是 SOUL.md 中普通的一行文本。你可以随时手动删除——删掉后护栏不再自动生效。下一次扫盘时会检测到缺失并提醒。
