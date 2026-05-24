@@ -1,7 +1,7 @@
 ---
 name: mnemonic
-description: 三省引擎(CMG)忆存线 (Mnemonic) — 状态记忆层。v3.4.0 模式识别加速(同会话2次推草稿，原7天3次)。纯记忆状态层，不生产规则不执行拦截。
-version: 3.4.0
+description: 三省引擎(CMG)忆存线 (Mnemonic) — 状态记忆层。v3.5.0 新增命中上下文保留(解决unknown规则无法还原的问题)。v3.4.0 模式识别加速(同会话2次推草稿，原7天3次)。纯记忆状态层，不生产规则不执行拦截。
+version: 3.5.0
 role: memory
 stage: background
 dependencies: []
@@ -15,7 +15,7 @@ metadata:
     related_skills: [canon, guard, canon-mnemonic-guard]
 ---
 
-# Mnemonic 忆存线 v3.3.0
+# Mnemonic 忆存线 v3.5.0
 
 > **角色**: memory (状态记忆层) | **阶段**: background (后台常驻) | **位置**: Guard 之后，Canon 之前
 >
@@ -41,7 +41,7 @@ metadata:
 
 | 版本 | 变更 |
 |------|------|
-| v3.3.0 | +M1 数据源降级链: intercept_log.jsonl → errors.jsonl → 等待状态，零报错 |
+| v3.5.0 | +命中上下文保留: 每次规则命中记录触发上下文(用户输入摘要+Agent操作类型)，解决unknown规则无法还原的问题 |
 | v3.2.0 | +M2 独立持久化 mnemonic_state.json +M4 误报率双向调节(置信度±0.1/0.2) |
 | v3.1.0 | +自动模式识别(7天≥3次→草稿→推Canon) |
 | v3.0.0 | CLI规格 + 独立触发 + 角色声明制 |
@@ -87,11 +87,63 @@ metadata:
 
 ### 4. 输出激活状态
 
-**必须输出**: "Mnemonic v3.4.0 已激活。数据源: {guard_intercept/canon_errors/none}。近 7 天拦截 {N} 次。模式识别: {on/degraded/off}。"
+**必须输出**: "Mnemonic v3.5.0 已激活。数据源: {guard_intercept/canon_errors/none}。近 7 天拦截 {N} 次。上下文保留: 就绪。模式识别: {on/degraded/off}。"
 
 ---
 
-## 自动模式识别
+## 命中上下文保留（v3.5.0）
+
+> **v3.5.0 新增。** 解决 unknown 规则无法还原的痛点——33 次真实命中，上下文全丢。从此每次命中都保留触发场景。
+
+### 记录内容
+
+每次 Guard 拦截命中时，Mnemonic 自动记录触发上下文到 `mnemonic_state.json`：
+
+```json
+{
+  "context_log": [
+    {
+      "ts": "ISO8601",
+      "rule_id": "rule_ban_013",
+      "session_id": "20260525_xxx",
+      "summary": "用户要求: '发布Guard v4.7.1到GitHub' | Agent操作: write_file覆盖SKILL.md",
+      "agent_action": "write_file",
+      "user_intent": "发布skill到GitHub",
+      "risk_type": "irreversible"
+    }
+  ]
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `summary` | 一句话摘要，用于未来还原规则时理解触发场景 |
+| `agent_action` | 触发时的Agent工具/操作类型 |
+| `user_intent` | 用户的原始意图摘要 |
+| `risk_type` | 操作风险类型（reversible/irreversible） |
+
+### 保留策略
+
+- 最近 100 条上下文保留在 `mnemonic_state.json`
+- 超过 100 条 → 归档到 `context_archive.jsonl`（永久追加）
+- 每个 rule_id 最多保留最近 5 条上下文（去重）
+
+### 对 unknown 规则的复活
+
+当 unknown 规则（`level: monitor`，内容为空）再次触发时：
+
+```
+1. Mnemonic 检查上下文日志 → 找到该 rule_id 的历史触发场景
+2. 同会话 ≥ 2 次 → 自动生成规则草稿（基于上下文的 summary）
+3. 推送至 Canon 固化引擎 → 用户确认后写入正式规则
+4. unknown → 有意义的规则，monitor → soft/hard
+```
+
+### 隐私保护
+
+- `summary` 字段不记录完整对话，只保留操作类型和意图摘要
+- 用户可通过 `!mnemonic clear_context` 清空上下文日志
+- 上下文日志独立于 Hermes 记忆系统，不混入 Memory store
 
 ### 触发条件
 

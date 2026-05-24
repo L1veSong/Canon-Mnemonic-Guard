@@ -182,7 +182,7 @@ def create_state():
     """Initialize state.json."""
     now = datetime.datetime.now().isoformat()
     state = {
-        "version": "2.5.2",
+        "version": "2.7.0",
         "created_at": now,
         "last_modified": now,
         "last_solidify_at": None,
@@ -220,7 +220,7 @@ def create_index():
 def create_mnemonic_state():
     """Initialize mnemonic_state.json."""
     state = {
-        "version": "3.3.0",
+        "version": "3.5.0",
         "created_at": datetime.datetime.now().isoformat(),
         "data_source": "guard_intercept",
         "data_source_history": {"guard_intercept": 0, "none_sessions": 0},
@@ -303,7 +303,7 @@ def write_soul_activation():
         print("  ⚠️ SOUL.md 不存在，跳过激活标记")
         return False
 
-    marker = "[CMG v5.3.0] 加载 canon-mnemonic-guard 护栏规则\n"
+    marker = "[CMG v5.4.0] 加载 canon-mnemonic-guard 护栏规则\n"
 
     content = SOUL_PATH.read_text()
     if marker.strip() in content:
@@ -336,8 +336,67 @@ def check_soul_activation():
     return version, f"v{version}"
 
 
+def check_subpackages():
+
+    """Check if guard/canon/mnemonic sub-packages are installed.
+    Returns dict of {name: description} for missing packages."""
+    sub_pkgs = {
+        "guard": "Guard 护栏线 — 拦截执行 + 闭环重试",
+        "canon": "Canon 典则线 — 规则生产 + 固化引擎",
+        "mnemonic": "Mnemonic 忆存线 — 记忆存储 + 模式识别",
+    }
+    base = HERMES_HOME / "skills" / "software-development"
+    missing = {}
+    for pkg, desc in sub_pkgs.items():
+        if not (base / pkg / "SKILL.md").exists():
+            missing[pkg] = desc
+    return missing
+
+
+def install_subpackages(missing):
+    """Prompt user to install missing sub-packages. Default: install all."""
+    print(f"\n⚠️ 检测到 {len(missing)} 个子包未安装：")
+    for pkg, desc in missing.items():
+        print(f"  [✓] {pkg} — {desc}")
+
+    print(f"\n默认全部安装。")
+    print("输入要跳过的包名（逗号分隔），或直接回车全部安装：")
+    skip_input = input("> ").strip()
+    skip_list = [s.strip() for s in skip_input.split(",") if s.strip()] if skip_input else []
+
+    for pkg in missing:
+        if pkg in skip_list:
+            print(f"  ⏭️ 跳过 {pkg}（后续补装: npx skills add {pkg} --yes --global）")
+        else:
+            print(f"  📦 安装 {pkg}...")
+            ret = os.system(f"npx skills add {pkg} --yes --global 2>/dev/null")
+            if ret == 0:
+                print(f"  ✅ {pkg} 安装完成")
+            else:
+                print(f"  ❌ {pkg} 安装失败（错误码: {ret}），请手动执行: npx skills add {pkg} --yes --global")
+
+    # Re-check after install
+    still_missing = check_subpackages()
+    if not still_missing:
+        print("\n✅ 全部子包已就绪。")
+    else:
+        installed = [p for p in ["guard","canon","mnemonic"] if p not in still_missing]
+        if installed:
+            print(f"\n✅ 已安装: {', '.join(installed)}")
+        print(f"⚠️ 仍缺失: {', '.join(still_missing.keys())}")
+        print("  后续可随时补装：npx skills add <包名> --yes --global")
+        print("  CMG 外观层会在此后每次启动时自动检测新安装的子包。")
+
+
 def main():
-    print_header("CMG 三省引擎 v5.3.0 初始化")
+    print_header("CMG 三省引擎 v5.4.0 初始化")
+
+    # Phase 0: Check sub-packages
+    missing = check_subpackages()
+    if missing:
+        install_subpackages(missing)
+    else:
+        print("✅ 子包检测: guard / canon / mnemonic 全部已安装")
 
     # Phase 1: Create directories
     create_directories()
@@ -393,7 +452,7 @@ def main():
     # Phase 8: SOUL activation
     print_header("⚡ 护栏自动激活")
     print("是否在 SOUL.md 中写入激活标记（一行），让护栏在每次对话自动生效？")
-    print(f"  一行内容: [CMG v5.3.0] 加载 canon-mnemonic-guard 护栏规则")
+    print(f"  一行内容: [CMG v5.4.0] 加载 canon-mnemonic-guard 护栏规则")
     print()
 
     if ask_yn("写入激活标记"):

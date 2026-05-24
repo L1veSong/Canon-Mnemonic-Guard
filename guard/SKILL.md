@@ -1,7 +1,7 @@
 ---
 name: guard
-description: 三省引擎(CMG)护栏线 (Guard) — 规则执行器。读取 Canon 规则库 + Mnemonic 状态，独立执行五层 pre_action 前置拦截。纯执行校验层，不生产规则不存记忆。
-version: 4.6.0
+description: 三省引擎(CMG)护栏线 (Guard) — 规则执行器。读取 Canon 规则库 + Mnemonic 状态，独立执行五层 pre_action 前置拦截。v4.8.0 增强上下文升级(2次触发+半衰期衰减) + 用户纠正自动提升规则级别。v4.7.0 新增闭环重试引擎，v4.7.1 新增风险分级。纯执行校验层，不生产规则不存记忆。
+version: 4.8.0
 role: guard
 stage: pre_action
 dependencies: []
@@ -15,7 +15,7 @@ metadata:
     related_skills: [canon, mnemonic, canon-mnemonic-guard]
 ---
 
-# Guard 护栏线 v4.6.0
+# Guard 护栏线 v4.8.0
 
 > **角色**: guard (规则执行器) | **阶段**: pre_action (每次行动前) | **位置**: Canon 之后，所有执行之前
 >
@@ -41,6 +41,8 @@ metadata:
 
 | 版本 | 变更 |
 |------|------|
+| v4.8.0 | +上下文升级增强: 2次即升级(原3次) + 半衰期衰减(24h计数减半) + repeat_tolerance可配置 + 用户纠正自动提升规则级别 |
+| v4.7.0 | +闭环重试引擎: 拦截后自动注入修正方向 → AI重生成 → 再检 → 合格放行 |
 | v4.6.0 | +典忆卫・闭环校验器: StepCompleteness拦截后自动逐步骤催办，直到全部闭环。零外部依赖。 |
 | v4.5.1 | +SOUL 激活标记检测: 加载时检查 SOUL.md 是否存在 [CMG v] 标记，缺失时提示写入。文档化三种激活方式。 |
 | v4.4.0 | 全路径加载 software-development/guard，解决重名冲突 |
@@ -60,7 +62,7 @@ metadata:
 
 | 方式 | 自动 | 操作 |
 |------|:---:|------|
-| **SOUL 激活标记**（推荐） | ✅ | CMG init 时选 Y → 在 SOUL.md 末尾写入 `[CMG v5.2.1] 加载 canon-mnemonic-guard 护栏规则`。Hermes 读到这行后自动加载 CMG → Guard 生效。 |
+| **SOUL 激活标记**（推荐） | ✅ | CMG init 时选 Y → 在 SOUL.md 末尾写入 `[CMG v5.4.0-alpha] 加载 canon-mnemonic-guard 护栏规则`。Hermes 读到这行后自动加载 CMG → Guard 生效。 |
 | `/skill guard` | ❌ | 每次新会话手动输入 |
 | `hermes -s guard` | ❌ | 启动时命令行指定 |
 
@@ -171,7 +173,7 @@ Guard 加载后检查 SOUL.md 是否存在 `[CMG v` 标记：
 
 ### 7. 输出激活状态
 
-**必须输出**: "Guard v4.6.0 已激活。读取 Canon {N} 条规则。效能分析: {X} 条规则正常 / {Y} 条降级 / {Z} 条过期。上下文感知: {重复检测/赶工检测/轻量模式} 就绪。动态清单: {论文类K项/代码类L项/通用类M项}。"
+**必须输出**: "Guard v4.8.0 已激活。读取 Canon {N} 条规则。风险分级: 就绪（不可逆暂停确认，可自动修复自动重试）。上下文升级: 2次触发 + 半衰期衰减(24h)。用户纠正提升: 就绪。效能分析: {X} 条规则正常 / {Y} 条降级 / {Z} 条过期。上下文感知: {重复检测/赶工检测/轻量模式} 就绪。动态清单: {论文类K项/代码类L项/通用类M项}。"
 
 ---
 
@@ -208,15 +210,71 @@ Guard 加载后检查 SOUL.md 是否存在 `[CMG v` 标记：
 5. 回写 Canon rules/ 中对应规则的 hit_count += 1
 ```
 
-### 上下文升级拦截（G3 · v4.5.0）
+### 上下文升级拦截（G3 · v4.5.0 → v4.8.0增强）
 
-同一 rule_id 在 5 分钟内已被拦截 ≥ 2 次（即本次为第 3 次）→ 升级 action：
-- 第 1-2 次: `action: warn`
-- 第 3+ 次: `action: block`（强制阻断，不可跳过）
+> **v4.8.0 增强：** 升级阈值从3次降为2次，新增半衰期衰减（24h计数减半），新增 `repeat_tolerance` 可配置。
 
-intercept_log.jsonl 中标注 `context_level: escalated`。
+**升级规则：**
+
+同一 rule_id 在本会话中第 2 次命中 → 升级 action：
+- 第 1 次: `action: warn`
+- 第 2+ 次: `action: block`（强制阻断，不可跳过）
+
+**半衰期衰减（v4.8.0）：** 每次新会话启动时，上会话的命中计数自动减半（向下取整）。防止低频规则因历史积累被误升级。
+
+**可配置阈值（config.json）：**
+
+```json
+{
+  "context_escalation": {
+    "repeat_tolerance": 2,
+    "half_life_hours": 24,
+    "cross_session_carry": true
+  }
+}
+```
+
+| 参数 | 默认 | 说明 |
+|------|------|------|
+| `repeat_tolerance` | 2 | 同一规则第N次命中即升级 |
+| `half_life_hours` | 24 | 半衰期（小时），跨会话计数衰减 |
+| `cross_session_carry` | true | 是否跨会话携带升级计数 |
+
+intercept_log.jsonl 中标注 `context_level: escalated`，新增 `escalation_count` 字段记录累计命中次数。
 
 ---
+
+### 用户纠正自动提升（v4.8.0）
+
+> **v4.8.0 新增。** 用户纠正某规则后，Guard 自动提升该规则的拦截级别。与 Canon 的 `level_history` 追踪联动。
+
+**提升规则：**
+
+```
+用户纠正某规则 → Guard 检测到用户否定拦截结果（说"这不是错误"则降级，说"记住/别再犯"则升级）：
+  - 用户说「记住」「别再犯」→ 该规则提升一级: monitor→soft, soft→hard
+  - hard 不再升级（已是最高）
+  - 当前会话内强化生效
+  - 跨会话恢复原级（除非 Canon 的 level_history 记录了永久变更）
+```
+
+**与 Canon 联动：** Guard 检测到用户纠正后，调用 Canon 的「用户纠正时的级别调整」逻辑，写入规则的 `level_history` frontmatter。
+
+**与 Mnemonic 联动：** 用户纠正事件写入 Mnemonic 的上下文记录（v3.5.0），用于未来的模式识别。
+
+**拦截日志：**
+
+```json
+{
+  "ts": "ISO8601",
+  "interceptor": "UserCorrection",
+  "rule_id": "rule_xxx",
+  "action": "escalate",
+  "from_level": "soft",
+  "to_level": "hard",
+  "reason": "用户纠正: 记住，别再犯"
+}
+```
 
 ### 第二层：FabricationInterceptor — 防幻觉声称
 
@@ -353,6 +411,134 @@ intercept_log.jsonl 中标注 `context_level: escalated`。
 
 ---
 
+## 闭环重试引擎 (v4.7.1 · Phase 2)
+
+> **核心变革：** v4.6.0 拦截后阻断等用户 → v4.7.0 拦截后自动修正再放行 → v4.7.1 不可逆操作暂停确认。
+> **监工升级为教练：** 不光说"错了"，还告诉你怎么改，让你重新来，直到对了才放。不可逆的事必须先问你。
+
+### 风险分级（v4.7.1）
+
+> **v4.7.1 新增。** hard 规则不再一刀切自动重试。Guard 根据操作类型自动判断风险等级，决定处理策略。
+
+**不可逆操作检测：** 拦截命中后，Guard 扫描当前操作的描述（工具名、参数、上下文），匹配不可逆关键词：
+
+| 风险类型 | 关键词 | 处理 |
+|---------|--------|------|
+| **不可逆** | 删除、清空、覆盖、移除、drop、rm、自动归档改写铁则库、write_file(已存在文件,内容不同) | clarify 暂停确认 |
+| **可自动修复** | 坐标未除2、行号污染、格式错误、版本号滞后、未加载Skill、关键词匹配 | RetryLoop 自动重试 |
+
+**判断优先级：** 先检查不可逆关键词 → 命中则 clarify。未命中 → 可自动修复 → RetryLoop。
+
+### 引擎流程
+
+```
+AI生成输出 → 五层拦截检查 →
+  ├─ 全部通过 → 直接放行
+  └─ 任一命中 →
+      ├─ 规则级别=hard + 不可逆操作 → clarify 暂停确认
+      │   1. 展示风险: "⛔ 检测到不可逆操作 [{操作}]，命中规则 [{rule}]。"
+      │   2. 给用户 A/B 选择: 确认执行 / 取消
+      │   3. 用户确认 → 放行执行
+      │   4. 用户取消 → 丢弃操作，重新生成
+      ├─ 规则级别=hard + 可自动修复 → 启动 RetryLoop
+      │   1. 读取规则修正模板（Canon rules/ frontmatter: correction_template）
+      │   2. 格式化重试指令（内部，不输出用户）
+      │   3. 替换当前生成结果 → AI 接收修正指令重新生成
+      │   4. 重新生成的结果再次经五层拦截检查
+      │   5. 通过 → 放行
+      │   6. 未通过 → 重试（最多 max_retries 次）
+      │   7. 超限 → 输出最后版本 + [CMG: 经N次修正仍未通过]
+      ├─ 规则级别=soft → 提醒1次即放行（不进入重试循环）
+      └─ 规则级别=monitor → 仅计数，不拦截不提醒
+```
+
+### 重试指令格式（内部注入，用户不可见）
+
+```text
+[CMG RetryLoop #N]
+上一轮回答违反规则: {rule_name}
+修正方向: {correction_template}
+请根据以上方向重新生成，不要再犯同一错误。
+```
+
+### 修正模板（每条 hard 规则必须在 Canon 中配置）
+
+| 规则 | correction_template |
+|------|---------------------|
+| 坐标不除2 | "所有 OCR 坐标必须除以 2。请将你输出的所有坐标数值全部除以 2 后再输出。" |
+| pyautogui截图 | "禁止使用 pyautogui/cli.py screenshot。请替换为 macOS 原生 screencapture -x。" |
+| pyautogui hotkey粘贴中文 | "禁止 pyautogui.hotkey('cmd','v')。请替换为 osascript keystroke 'v' using command down。" |
+| 不读完文档就下结论 | "安装前必须完整阅读官方 README + 搜索目标平台关键词 + 先跑官方安装命令。请先执行以上步骤再下结论。" |
+
+**未配置模板的 hard 规则：** 使用通用回退模板——"你的回答违反了规则：{rule_name}。请遵守该规则重新生成。"
+
+### 重试参数（config.json 可配置）
+
+```json
+{
+  "retry_loop": {
+    "enabled": true,
+    "max_retries": 3,
+    "retry_on_hard_only": true,
+    "inject_correction": true,
+    "context_mode": "replace"
+  }
+}
+```
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `enabled` | true | 闭环重试开关 |
+| `max_retries` | 3 | 最大重试次数 |
+| `retry_on_hard_only` | true | true=仅 hard 规则自动重试，soft 提醒放行 |
+| `inject_correction` | true | 是否注入修正方向（false=只告知违规不指方向） |
+| `context_mode` | "replace" | replace=替换上一轮输出；append=追加到末尾（慎用） |
+
+### 重试拦截日志
+
+每次重试写入 `intercept_log.jsonl`，新增字段：
+
+```json
+{
+  "ts": "ISO8601",
+  "interceptor": "RetryLoop",
+  "rule_id": "rule_retina_2x_coordinate",
+  "action": "retry",
+  "retry_attempt": 2,
+  "retry_max": 3,
+  "reason": "坐标未除2",
+  "context_mode": "replace"
+}
+```
+
+### 超限处理
+
+达到 `max_retries` 仍未通过：
+- 输出最后一次修正结果（非原始违规输出）
+- 附带标记：`[CMG: 经{max_retries}次修正仍未通过 · 违规: {rule_name}]`
+- 提示用户：可用 `!bypass` 强制放行，或 `!disable_rule {rule_id}` 暂停该规则
+- **永不静默丢弃**——用户始终能看到结果
+
+### 与同会话升级的配合
+
+RetryLoop 每次重试都写入 intercept_log.jsonl。同会话升级逻辑在 RetryLoop 模式下调整：
+- 重试成功（最终放行）→ 不计入升级计数
+- 重试失败（超限放行）→ 计入升级计数
+- 原因：成功修正说明 AI 学会了，不应惩罚
+
+### 上下文管理策略
+
+- **replace 模式（默认）**：重试时替换上一轮 AI 输出，不追加到对话历史
+- 只保留最近一次违规原因 + 修正方向注入到 AI 上下文
+- 避免 3 次重试后上下文膨胀 3 倍
+
+### 激活输出
+
+Guard 加载时新增一行：
+"闭环重试引擎: ✓ 已就绪（最大 {N} 次重试，hard规则: 不可逆暂停确认 / 可自动修复自动重试）。"
+
+---
+
 ## 评分计数器
 
 每次拦截检查后，更新 Canon rules/ 目录中对应规则的 frontmatter：
@@ -443,12 +629,18 @@ CMG 四包制（canon/guard/mnemonic/canon-mnemonic-guard）升版时，只改 f
 
 ### 坑点 5: Guard 功能验证必须实际触发
 
-文档写完不等于功能通。v5.2.1 发布前 Guard 的五层拦截器有完整规格但从未在真实对话中拦截过。端到端测试方法：
+文档写完不等于功能通。每次发布前必须跑端到端测试。标准测试场景见 `references/loop-validator-test-pattern.md`。
 
-```
-BanInterceptor:        让 Agent 说「编造一个不存在的 Skill」→ 应拦截
-FabricationInterceptor: 让 Agent 声称「已全部完成」但实际有未完成项 → 应拦截
-StepCompleteness:      指令含多步骤，Agent 跳过一步 → 应拦截
-```
+### 坑点 6: 打包时误删 references/ 目录
 
-每次发布前必须跑一遍这三项。v5.2.1 发布时终于跑了前两项并通过。
+v5.2.1 和 v5.3.0 初版打包时误把 `references/` 目录漏掉。事后 `unzip -l` 验证。
+
+### 坑点 7: 风险分级实战验证（2026-05-25）
+
+Guard v4.7.1 的风险分级成功拦截了 Agent 准备删除 6 个规则文件的操作——识别为不可逆，触发 clarify 暂停确认，保住 33 次历史命中记录。详见 `references/if-interception-case-study.md`。
+
+### 坑点 7: 文档标题与 frontmatter 版本号不同步（2026-05-25 发现）
+
+v4.7.0 发布时 frontmatter 已改为 `version: 4.7.0`，但文档标题仍是 `# Guard 护栏线 v4.6.0`。只改了 frontmatter 和激活消息，漏了 H1 标题。v4.7.1 修复时一并更正。
+
+**正确做法：** 升版后跑全文件 grep，确保 frontmatter `version:`、H1 标题、激活状态输出、闭环重试引擎标题中所有硬编码版本号同步。不仅限于 SKILL.md —— 如果有 README.md / CHANGELOG.md 也一并检查。

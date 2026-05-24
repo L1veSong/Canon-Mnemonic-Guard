@@ -1,31 +1,29 @@
-# Changelog — Canon 典则线
+# Canon 典则线 — 版本变更日志
 
-## v2.6.0 — 规则分级 + 修正模板 (2026-05-23)
+## [2.7.0] — 2026-05-25
 
 ### 新增
-- 规则分级: hard/soft/monitor 三级，Guard 根据级别决定拦截策略
-- 修正模板 (correction_template): 每条 hard 规则配置具体修正方向
-- frontmatter 新增字段: level, correction_template, level_history
-- 用户纠正时的级别调整: monitor→soft→hard，当前会话强化、跨会话恢复
-- !remember 增强: --hard/--soft 参数，!monitor 命令
 
-## v2.5.2 — SOUL 激活 (2026-05-22)
+- **误报自动降级**：hard≥3次否决→soft，soft≥5次→monitor，7天观察期
+- **规则有效期**：`!remember --expires 7d/30d/never`，到期自动归档
 
-- SOUL 激活机制: init 时询问写入激活标记到 SOUL.md
-- 扫盘时检测标记存在 + 版本匹配
-- 用户删标记即停用
+---
 
-## v2.5.1 — 推荐扫描 (2026-05-20)
+## [2.6.0] — 2026-05-23
 
-- 推荐列表自动扫描 (!scan-recommendations)
-- plugins 扫描源支持
+- 规则分级 hard/soft/monitor
+- 修正模板 correction_template
+- 用户纠正级别调整
+- level_history 追踪
 
-## v2.5.0 — 定时扫盘 (2026-05-19)
+## [2.5.0] — 2026-05-22
 
-- C1 定时扫盘: 加载时检查距上次扫盘天数
-- 超阈值自动触发
+- 定时扫盘 + SOUL 激活机制
 
-## [2.4.1] — 2026-05-18
+## [2.4.0] — 2026-05-19
 
-### 四包制独立发布
-- 从 CMG v5.1.0 物理拆分，成为独立 `canon` Skill
+- 规则效果评分 + 角色声明制
+
+## [2.0.0] — 2026-05-16
+
+- Obsidian 结构化 rules/ 目录

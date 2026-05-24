@@ -1,10 +1,10 @@
-# 三省引擎 (CMG) — Canon-Mnemonic-Guard v5.3.1
+# 三省引擎 (CMG) — Canon-Mnemonic-Guard v5.4.0
 
 > AI 的错题本 + 免疫系统 + 监工。你只需指出一次错误，它从此记住。
 > 取自「吾日三省吾身」。也可昵称「典忆卫」。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-5.3.1-blue)]()
+[![Version](https://img.shields.io/badge/version-5.4.0-blue)]()
 
 ---
 
@@ -14,34 +14,22 @@
 
 | 线路 | 版本 | 定位 | 一句话 |
 |------|------|------|--------|
-| **典则线** Canon | v2.5.2 | 规则生产库 | 你说「记住」→ 写入规则 → 去重固化 |
-| **护栏线** Guard | v4.6.0 | 规则执行器 + 监工 | 五层拦截 → 闭环校验器逐步骤催办 |
-| **忆存线** Mnemonic | v3.3.0 | 状态记忆层 | 读拦截日志 → 自动模式识别 → 推送规则草稿 |
-| **外观层** CMG | v5.3.0 | 四包索引 | init 脚本 + SOUL 激活标记 + 推荐列表扫描 |
+| **典则线** Canon | v2.7.0 | 规则生产库 | 你说「记住」→ 写入规则 → 去重固化 |
+| **护栏线** Guard | v4.8.0 | 规则执行器 + 闭环重试 | 风险分级 + 2次升级 + 用户纠正提升 |
+| **忆存线** Mnemonic | v3.5.0 | 记忆状态层 | 上下文保留 + 2次推草稿 |
+| **外观层** CMG | v5.4.0 | 四包索引 | init 脚本 + SOUL 激活标记 |
 
 ---
 
-## v5.3.0 新特性：典忆卫・闭环校验器
+## v5.4.0 新特性：四大增强
 
-**Guard 不再只是一个红灯。它是监工。**
+**P1 同会话重复快速升级：** 同一规则第2次命中直接 block（原3次），24h半衰期衰减防误升级。
 
-当 Agent 跳过步骤想交差时，闭环校验器自动接管：
+**P3 用户纠正自动提升：** 你说「记住」「别再犯」→ 规则自动升级（monitor→soft→hard）。
 
-```
-Agent: "差不多了，完成了"
-Guard:  ⛔ 拦截。剩余 3 步未完成。
+**P4 误报自动降级 + 规则有效期：** 连续否决≥3次自动降级。`!remember --expires 7d` 支持临时规则。
 
-       进入典忆卫・闭环校验器:
-       [1/3] 补充参考文献 → Agent执行 → ✅
-       [2/3] 格式检查     → Agent执行 → ✅
-       [3/3] 最终验证     → Agent执行 → ✅
-
-       3/3 全部闭环，放行。
-```
-
-- **零外部依赖** — 不用 ralph-loop、不写文件、不委派子 Agent
-- **典忆卫原生** — 用自己的规则体系、对话上下文、拦截器框架实现
-- **2 步以上自动触发** — 剩余步骤 ≥ 2 时进入逐步骤催办
+**Mnemonic 上下文保留：** 每次命中记录触发场景，unknown 规则触发后自动还原。
 
 ---
 
@@ -49,7 +37,7 @@ Guard:  ⛔ 拦截。剩余 3 步未完成。
 
 ```bash
 python3 init.py
-# 选 Y → SOUL.md 写入: [CMG v5.3.0] 加载 canon-mnemonic-guard 护栏规则
+# 选 Y → SOUL.md 写入: [CMG v5.4.0] 加载 canon-mnemonic-guard 护栏规则
 ```
 
 ---
@@ -70,7 +58,17 @@ python3 init.py
 
 ```bash
 npx skills add canon-mnemonic-guard --yes --global
-python3 init.py
+npx canon-mnemonic-guard init
+```
+
+首次 init 会自动检测子包（Guard/Canon/Mnemonic）是否已安装。未安装的子包会提示选择——默认全部安装，可跳过某个，后续补装自动检测。
+
+也可分别安装子包：
+
+```bash
+npx skills add guard --yes --global
+npx skills add canon --yes --global
+npx skills add mnemonic --yes --global
 ```
 
 ---
