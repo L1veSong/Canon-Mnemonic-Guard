@@ -1,29 +1,5 @@
 # Changelog — Mnemonic 忆存线
 
-## [3.0.0] — 2026-05-21
-
-### 初始发布 — 状态记忆层独立 Skill
-
-**自动模式识别**
-- 读取 Guard intercept_log.jsonl，按关键词分组统计
-- 同一关键词 7 天内 ≥ 3 次 → 自动生成规则草稿
-- 推送至 Canon 固化引擎，不直接写入 rules/
-
-**CLI 命令**
-- `hermes reflect status` — 规则库状态
-- `hermes reflect add` — 手动添加规则
-- `hermes reflect scan` — 手动扫盘
-- `hermes reflect patterns` — 高频模式查看
-
-**角色声明**
-- `role: memory, stage: background`
-- 独立进程模式：不作为 Skill 加载，作为 Hermes 守护进程常驻
-
-**三线联动**
-- 读取 Guard intercept_log.jsonl + Canon errors.jsonl
-- 推送规则草稿至 Canon 固化引擎
-- 不生产规则、不执行拦截
-
 ## v3.4.0 — 模式识别加速 (2026-05-23)
 
 ### 变更
@@ -32,3 +8,21 @@
 - RetryLoop 超限联动: 同一 rule_id 超限2次自动推草稿
 - 置信度评分: 同会话2次→0.7，跨会话7天2次→0.5
 - 激活消息版本号: v3.3.0 → v3.4.0
+
+## v3.3.0 — 数据源降级链 (2026-05-22)
+
+- M1 数据源降级链: intercept_log.jsonl → errors.jsonl → 等待状态，零报错
+- 数据源切换监控: 自动从降级切回主数据源
+
+## v3.2.0 — 独立持久化 (2026-05-20)
+
+- M2 独立持久化: mnemonic_state.json
+- M4 误报率双向调节: 置信度 ±0.1/0.2 浮动
+
+## v3.1.0 — 自动模式识别 (2026-05-19)
+
+- 7天≥3次→草稿→推送 Canon
+
+## [3.0.0] — 2026-05-18
+
+### 初始发布 — 状态记忆层独立 Skill
