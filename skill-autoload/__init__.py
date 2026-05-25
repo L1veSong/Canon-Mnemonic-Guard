@@ -1,4 +1,4 @@
-"""skill-autoload: Inject skill loading directives into system prompt at session start.
+"""skill-autoload: Inject skill loading directives via pre_llm_call hook.
 
 Reads ``skill_autoload`` configuration from Hermes config.yaml:
 
@@ -17,6 +17,9 @@ Reads ``skill_autoload`` configuration from Hermes config.yaml:
 - ``per_platform.<platform>``: override for a specific platform.  Empty list
   means no auto-load on that platform.
 
+Injects ``[MUST-LOAD]`` context into the first turn's user message via
+``pre_llm_call`` hook.  Context is ephemeral — never persisted.
+
 If ``skill_autoload`` is missing or empty, the plugin is a no-op.
 """
 
@@ -32,6 +35,9 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _CONFIG_CACHE: Optional[dict] = None
+
+# Track which sessions have already received auto-load injection
+_INJECTED_SESSIONS: set = set()
 
 
 def _load_config() -> dict:
@@ -68,35 +74,44 @@ def _get_skills_for_platform(platform: str) -> List[str]:
 
 
 # ---------------------------------------------------------------------------
-# Hook
+# Hook (pre_llm_call — Hermes v0.14.0+ compatible)
 # ---------------------------------------------------------------------------
 
 _MUST_LOAD_PREFIX = (
-    "\n\n"
     "[MUST-LOAD] 以下技能已配置为自动加载。"
     "每个会话开始后，使用 skill_view(name='<skill>') 逐个加载它们。"
     "这是强制性指令，不可跳过。\n"
 )
 
 
-def _pre_system_prompt(
-    system_prompt: str,
+def _pre_llm_call(
     session_id: str = "",
-    model: str = "",
+    is_first_turn: bool = False,
     platform: str = "",
-) -> str | None:
+    **kwargs,
+) -> Optional[dict]:
+    """Inject [MUST-LOAD] context on first turn only."""
+    if not is_first_turn:
+        return None
+
+    # Only inject once per session
+    if session_id in _INJECTED_SESSIONS:
+        return None
+
     skills = _get_skills_for_platform(platform)
     if not skills:
         return None
 
+    _INJECTED_SESSIONS.add(session_id)
+
     lines = [_MUST_LOAD_PREFIX]
     for s in skills:
         lines.append(f"  必须加载: {s}")
-    lines.append("")
-    directive = "\n".join(lines)
 
-    logger.info("[skill-autoload] injecting auto-load for: %s (platform=%s)", skills, platform)
-    return system_prompt + directive
+    context = "\n".join(lines)
+    logger.info("[skill-autoload] injecting auto-load for: %s (platform=%s, session=%s)",
+                skills, platform, session_id)
+    return {"context": context}
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +119,6 @@ def _pre_system_prompt(
 # ---------------------------------------------------------------------------
 
 def register(ctx) -> None:
-    ctx.register_hook("pre_system_prompt", _pre_system_prompt)
+    ctx.register_hook("pre_llm_call", _pre_llm_call)
     skills = _get_skills_for_platform("")  # default list
     logger.info("[skill-autoload] plugin registered (default skills: %s)", skills or "none")
