@@ -1,16 +1,16 @@
-# Canon-Mnemonic-Guard 三省引擎 v5.5.0
+# Canon-Mnemonic-Guard 三省引擎 v5.5.1
 
 > **典则·忆存·护栏** — AI 的错题本、免疫系统、监工。取自「吾日三省吾身」。
-> 你只需指出一次错误，它从此记住。
+> 你只需指出一次错误，它从此记住。**v5.5.1：skill-autoload 插件自动加载，零手动。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-5.5.0-blue)]()
+[![Version](https://img.shields.io/badge/version-5.5.1-blue)]()
 
 ---
 
 ```
                          +------------------+
-                         |    CMG  v5.5.0   |
+                         |    CMG  v5.5.1    |
                          +--------+---------+
                                   |
              +--------------------+--------------------+
@@ -20,11 +20,24 @@
      |     v2.7.1     |  |     v4.8.1     |  |     v3.5.2     |
      +-------+--------+  +-------+--------+  +-------+--------+
              |                   |                   |
-         规则生产              拦截执行              模式识别
-      你说「记住」→写入      五层前置→命中就拦       从日志学→推草稿
+        规则生产              拦截执行              模式识别
+    你说「记住」→写入     五层前置→命中就拦     从日志学→推草稿
 
-    微型调度 + 四包索引
+    微型调度 + 四包索引 + 自动加载
 ```
+
+### 🆕 v5.5.1 新特性
+
+**skill-autoload 插件自动加载。** 不用再手动 `/skill` 或依赖 SOUL 标记——CMG 每次会话自动生效。
+
+```yaml
+# ~/.hermes/config.yaml
+skill_autoload:
+  skills:
+    - canon-mnemonic-guard
+```
+
+配合 [skill-autoload](https://github.com/L1veSong/skill-autoload) 插件（本合集自带），配置即生效。飞书/微信等平台可单独关闭。
 
 ---
 
@@ -42,13 +55,13 @@
   从日志中学  ──▶  Mnemonic 发现模式 ──▶ 推草稿 ──▶ 你确认 ──▶ 规则+1
 ```
 
-53 条规则，没有一条是预设的。全部从你的实际使用中生长出来。
+54 条规则，没有一条是预设的。全部从你的实际使用中生长出来。
 
 ---
 
 ## 怎么跑起来的
 
-> 对应中文见框外说明
+> 框内英文仅为对齐，对应中文见框外说明。
 
 ```
   +------------------------------------------------------+
@@ -73,7 +86,7 @@
   |    |  . Same session >= 2 hits --> draft rule        |
   |    |  . Cross-session >= 2 hits --> draft rule       |
   |    v                                                 |
-  |  Confirm --> Canon solidify --> +1 rule              |
+  |  Confirm --> Canon solidify --> +1 rule               |
   |                                                      |
   +------------------------------------------------------+
 ```
@@ -153,6 +166,28 @@
 
 ---
 
+## ⚡ 自动加载（推荐）
+
+安装 skill-autoload 插件，CMG 在每次会话自动生效：
+
+```yaml
+# ~/.hermes/config.yaml
+plugins:
+  enabled:
+    - skill-autoload
+
+skill_autoload:
+  skills:
+    - canon-mnemonic-guard
+  per_platform:
+    feishu: []
+    weixin: []
+```
+
+> 需要 Hermes 包含 `pre_system_prompt` 钩子。PR 已提交至 NousResearch/hermes-agent，合入前可本地 patch。
+
+---
+
 ## 装起来
 
 ```bash
@@ -206,6 +241,7 @@ npx canon-mnemonic-guard init
 
 | 推荐 | 增强点 |
 |------|--------|
+| skill-autoload | 自动加载 CMG，零手动 |
 | ralph-loop | 跳步骤 → 闭环验证 |
 | verification-before-completion | 声称完成 → 证据协议 |
 | diagnose | 连续命中 → 根因诊断 |
@@ -239,12 +275,13 @@ npx canon-mnemonic-guard init
   v5.4.0 ── P1+P3+P4 + 上下文保留           ← 大更
   v5.4.1 ── P2 补全（Mnemonic 加速）
   v5.4.2 ── M3 清零（!patterns + !datasource）
-  v5.5.0 ── 微型调度器                       ← 当前
+  v5.5.0 ── 微型调度器
+  v5.5.1 ── skill-autoload + 生态合集发布     ← 当前
   ─────────────────────────────────────────
   未来    ── 完整中央调度器（独立项目）
 ```
 
-**P 系列全家福：** P1 同会话升级 ✅ · P2 加速模式识别 ✅ · P3 用户纠正提升 ✅ · P4 误报降级+有效期 ✅
+**P 系列全家福：** P1 同会话升级 ✅ · P2 加速模式识别 ✅ · P3 用户纠正提升 ✅ · P4 误报降级+有效期 ✅ · P5 傻瓜/专家模式 ⏳
 
 ---
 
@@ -252,15 +289,15 @@ npx canon-mnemonic-guard init
 
 **规则库跟 ZIP 一起发布吗？**
 
-不 `rules/` 在 `~/.hermes/self-reflection/` 下，是你本地的，不打包。别人装了 CMG，规则库从零开始，踩自己的坑，长自己的记性。
+不。`rules/` 在 `~/.hermes/self-reflection/` 下，是你本地的，不打包。别人装了 CMG，规则库从零开始，踩自己的坑，长自己的记性。
 
 **跟我已装的 skill 会打架吗？**
 
-不会 CMG 用 stage 声明制排队——按"锚点 → 护栏 → 调度 → 执行"的固定顺序。CMG 在 pre_action 位置，在所有 skill 干活之前检查。
+不会。CMG 用 stage 声明制排队——按"锚点 → 护栏 → 调度 → 执行"的固定顺序。CMG 在 pre_action 位置，在所有 skill 干活之前检查。
 
 **规则太多会不会卡？**
 
-规则超过 20 条自动切轻量模式——只跑第一道闸（精确匹配）
+规则超过 20 条自动切轻量模式——只跑第一道闸（精确匹配），跳过后面四道。54 条规则不影响速度。
 
 ---
 

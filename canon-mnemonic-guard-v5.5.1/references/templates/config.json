@@ -1,0 +1,33 @@
+{
+  "match_mode": "layered",
+  "load_mode": "full_preload",
+  "semantic_match": "auto",
+  "auto_solidify_threshold": 10,
+  "whitelist": [],
+  "checklists": ["default"],
+  "scan_sources": {
+    "_comment": "v2.3.0 可配置扫描源。只扫白名单路径，绝不全盘扫描。",
+    "builtin": {
+      "_comment": "内置源，默认全部开启。可独立关闭。",
+      "soul": true,
+      "memory": true,
+      "skills": true
+    },
+    "obsidian": {
+      "_comment": "Obsidian vault 扫描。enabled=false 则跳过。",
+      "enabled": true,
+      "vault_path": "~/obsidian",
+      "rule_dirs": ["🔒 HERMES-全局铁则库"]
+    },
+    "custom": [
+      {
+        "_comment": "自定义源示例。用户可添加 OpenClaw memory、外部目录等。",
+        "_example": "如不需要，清空此数组即可。",
+        "name": "openclaw_memory",
+        "path": "~/.openclaw/memory/",
+        "file_pattern": "*.md",
+        "enabled": false
+      }
+    ]
+  }
+}
