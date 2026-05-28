@@ -1,16 +1,16 @@
-# Canon-Mnemonic-Guard 三省引擎 v5.5.2
+# Canon-Mnemonic-Guard 三省引擎 v5.5.4
 
 > **典则·忆存·护栏** — AI 的错题本、免疫系统、监工。取自「吾日三省吾身」。
-> 你只需指出一次错误，它从此记住。**v5.5.2：默认固化阈值10→3，修复init.py版本号滞后。**
+> 你只需指出一次错误，它从此记住。**v5.5.4：cmg-guard v1.2.0 升级 — 步骤完整性检查 + 分阶段升级系统。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-5.5.2-blue)]()
+[![Version](https://img.shields.io/badge/version-5.5.4-blue)]()
 
 ---
 
 ```
                          +------------------+
-                         |    CMG  v5.5.2    |
+                         |    CMG  v5.5.4    |
                          +--------+---------+
                                   |
              +--------------------+--------------------+
@@ -23,16 +23,20 @@
         规则生产              拦截执行              模式识别
     你说「记住」→写入     五层前置→命中就拦     从日志学→推草稿
 
-    微型调度 + 四包索引 + 自动加载 + 硬拦截
+    配套插件: skill-autoload v1.0.1 + cmg-guard v1.2.0
 ```
 
-### 🆕 v5.5.2 更新内容
+### 🆕 v5.5.4 更新内容
 
-**默认固化阈值降低：** 从累积 10 次错误才自动固化降为 3 次。踩坑三次就记住，不用等到第十次。
+**cmg-guard v1.2.0**（配套硬拦截插件升级）：
 
-**init.py 版本号修复：** 初始化脚本中的硬编码版本号从 v5.4.0 同步到 v5.5.2。新用户 init 即获得最新配置。
+- **步骤完整性检查**：AI 回复前强制验证 — 链接必须完整阅读、文件必须覆盖度校验、Orchestrator 流程必须 clarify、跑 Skill 必须执行完整 workflow。步骤没做完 → LLM 调用直接阻断。
+- **分阶段升级系统**：同一错误第1次标记提醒 → 第2次警告拦截 → 第3次推草稿 → 第5次永久黑名单。不再一刀切进黑名单。
+- **新增 `post_llm_call` 钩子**：AI 回复后二次黑名单扫描。
 
-**历史回顾（v5.5.1）：**
+> cmg-guard 和 skill-autoload 是配套插件，辅助核心四线工作。核心四线（Canon / Guard / Mnemonic / 外观层）本次未变。
+
+**历史回顾：**
 
 ```
 skill-autoload (Plugin) → 保证 CMG 每次会话自动加载
@@ -294,7 +298,8 @@ npx canon-mnemonic-guard init
   v5.4.2 ── M3 清零（!patterns + !datasource）
   v5.5.0 ── 微型调度器
   v5.5.1 ── 三层闭环 (skill-autoload + cmg-guard)
-  v5.5.2 ── 默认固化阈值10→3，修复init.py版本号滞后  ← 当前
+  v5.5.2 ── 默认固化阈值10→3，修复init.py版本号滞后
+  v5.5.4 ── cmg-guard v1.2.0：步骤完整性检查+分阶段升级  ← 当前
   ─────────────────────────────────────────
   未来    ── 完整中央调度器（独立项目）
 ```

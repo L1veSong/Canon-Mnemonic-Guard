@@ -1,5 +1,23 @@
 # CMG 三省引擎更新日志
 
+## v5.5.4 (2026-05-28) — cmg-guard 系统级拦截
+
+### 变更: cmg-guard v1.1.0 → v1.2.0
+- **步骤完整性检查** (`pre_llm_call`)：4 条强制规则 — 链接完整阅读、文件覆盖度校验、Orchestrator clarify、Skill workflow 执行
+- **分阶段升级系统**：同一错误逐步升级（sentinel → warn → draft → blacklist），不再一刀切
+- **新增 `post_llm_call` 钩子**：AI 回复后二次黑名单扫描
+- 哨兵正则优化：新增 "又偷懒""记住" 等匹配模式
+- 升级状态持久化到 `escalation.json`
+
+### 四包版本
+- canon v2.7.2 / guard v4.8.2 / mnemonic v3.5.3（未变）
+- 插件：skill-autoload v1.0.1 / cmg-guard v1.2.0
+
+### 说明
+核心四线本次未变。这是 cmg-guard 配套插件的独立升级，ES 小升版记录。
+
+---
+
 ## v5.5.2 (2026-05-26) — 稳定版
 
 ### 变更

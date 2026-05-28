@@ -1,10 +1,11 @@
 name: cmg-guard
-version: 1.1.0
-description: Hard-enforce CMG ban rules via transform_llm_output hook + optional lightweight sentinel via pre_llm_call hook. Scans AI output for rule violations and user input for suspected corrections.
+version: 1.2.0
+description: System-level CMG enforcement. Hard-enforce ban rules via transform_llm_output + step-completeness checker via pre_llm_call + global blacklist. Scans AI output for rule violations, blocks LLM calls when steps are skipped, and permanently blacklists user-defined errors.
 author: L1veSong
 license: MIT
 provides_hooks:
   - transform_llm_output
   - pre_llm_call
+  - post_llm_call
 kind: standalone
 homepage: https://github.com/L1veSong/CMG
