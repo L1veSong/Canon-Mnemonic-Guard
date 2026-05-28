@@ -2,6 +2,18 @@
 
 ## v5.5.4 (2026-05-28) — cmg-guard v1.2.0
 
+### 2026-05-28 第二次更新 — 诊断报告美化
+
+- **SKILL.md 诊断报告格式重设计**：Unicode 圆角框 + 标题居中 + 简写治理
+  - 所有对外输出（诊断报告、协调日志）中 `CMG` 简写改为全名「三省引擎」
+  - 输出格式从 ASCII 粗框（`═══`）改为 Unicode 圆角框（`╭─╮│╰─╯`）
+  - 新增 ban 规则 rule_071：对外输出禁止 CMG 简写
+  - 新增坑点 22（correction_template 反斜杠 YAML 解析）和坑点 23（_index.md 漂移）
+- **子包版本**：canon v2.7.2 / guard v4.8.2 / mnemonic v3.5.3（无变更）
+- **桌面包已同步**：guard SKILL.md + CMG SKILL.md 从已安装版本更新到桌面包
+
+
+
 ### cmg-guard v1.1.0 → v1.2.0
 - **步骤完整性检查**：pre_llm_call 新增 4 条强制规则（链接完整阅读、文件覆盖度校验、Orchestrator clarify、Skill workflow 执行）
 - **分阶段升级系统**：同一错误逐步升级（第1次标记→第2次警告→第3次推草稿→第5次黑名单）
