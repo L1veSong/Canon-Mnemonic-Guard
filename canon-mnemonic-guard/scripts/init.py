@@ -297,13 +297,81 @@ def scan_recommendations(config):
     return installed_configured, installed_unconfigured, not_installed
 
 
+def configure_hermes_yaml():
+    """Auto-configure config.yaml for skill-autoload + cmg-guard plugins.
+    
+    Adds ``skill-autoload`` and ``cmg-guard`` to ``plugins.enabled``,
+    and configures ``skill_autoload`` to auto-load ``canon-mnemonic-guard``.
+    """
+    import yaml
+
+    if not CONFIG_YAML.exists():
+        print("  ⚠️ config.yaml 不存在，跳过插件自动配置")
+        return False
+
+    try:
+        with open(CONFIG_YAML, "r") as f:
+            cfg = yaml.safe_load(f) or {}
+    except Exception:
+        print("  ⚠️ config.yaml 解析失败，跳过")
+        return False
+
+    changed = False
+
+    # 1. Ensure plugins.enabled includes skill-autoload and cmg-guard
+    plugins = cfg.setdefault("plugins", {})
+    enabled = plugins.setdefault("enabled", [])
+    if not isinstance(enabled, list):
+        enabled = []
+        plugins["enabled"] = enabled
+
+    for pname in ("skill-autoload", "cmg-guard"):
+        if pname not in enabled:
+            enabled.append(pname)
+            changed = True
+            print(f"  + plugins.enabled: {pname}")
+
+    # 2. Ensure skill_autoload config
+    sa = cfg.setdefault("skill_autoload", {})
+    skills = sa.setdefault("skills", [])
+    if not isinstance(skills, list):
+        skills = []
+        sa["skills"] = skills
+
+    if "canon-mnemonic-guard" not in skills:
+        skills.append("canon-mnemonic-guard")
+        changed = True
+        print("  + skill_autoload.skills: canon-mnemonic-guard")
+
+    # 3. Ensure per_platform disable for messaging (safe default)
+    pp = sa.setdefault("per_platform", {})
+    for plat in ("feishu", "weixin"):
+        if plat not in pp:
+            pp[plat] = []
+            changed = True
+
+    if not changed:
+        print("  ℹ️ config.yaml 已配置，无需修改")
+        return True
+
+    # Write back
+    try:
+        with open(CONFIG_YAML, "w") as f:
+            yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        print("  ✅ config.yaml 已更新")
+        return True
+    except Exception as e:
+        print(f"  ❌ 写入失败: {e}")
+        return False
+
+
 def write_soul_activation():
     """Write one-line activation marker to SOUL.md."""
     if not SOUL_PATH.exists():
         print("  ⚠️ SOUL.md 不存在，跳过激活标记")
         return False
 
-    marker = "[CMG v5.5.2] 加载 canon-mnemonic-guard 护栏规则\n"
+    marker = "[CMG v5.5.3] 加载 canon-mnemonic-guard 护栏规则\n"
 
     content = SOUL_PATH.read_text()
     if marker.strip() in content:
@@ -389,7 +457,7 @@ def install_subpackages(missing):
 
 
 def main():
-    print_header("CMG 三省引擎 v5.5.2 初始化")
+    print_header("CMG 三省引擎 v5.5.3 初始化")
 
     # Phase 0: Check sub-packages
     missing = check_subpackages()
@@ -449,10 +517,15 @@ def main():
         print("  ℹ️ 当前无推荐工具已安装。CMG 核心功能（规则管理+护栏拦截）不受影响。")
         print("  之后安装推荐工具后，运行 !scan-recommendations 即可接入。")
 
+    # Phase 7.5: Auto-configure Hermes config.yaml
+    print_header("🔌 插件自动配置")
+    print("正在配置 config.yaml，确保 CMG 插件自动加载...")
+    configure_hermes_yaml()
+
     # Phase 8: SOUL activation
     print_header("⚡ 护栏自动激活")
     print("是否在 SOUL.md 中写入激活标记（一行），让护栏在每次对话自动生效？")
-    print(f"  一行内容: [CMG v5.5.2] 加载 canon-mnemonic-guard 护栏规则")
+    print(f"  一行内容: [CMG v5.5.3] 加载 canon-mnemonic-guard 护栏规则")
     print()
 
     if ask_yn("写入激活标记"):
@@ -478,5 +551,98 @@ def main():
     print("  !diagnose             → 一键诊断")
 
 
+def uninstall():
+    """Remove all CMG components, restore config.yaml to pre-CMG state.
+
+    Preserves user data (self-reflection/rules/) unless --purge is passed.
+    Does NOT touch any other user config or plugins.
+    """
+    import shutil
+    import re
+    import yaml
+
+    purge = "--purge" in sys.argv
+
+    print_header("CMG 卸载")
+    changed = False
+
+    # 1. config.yaml: remove skill-autoload and cmg-guard
+    if CONFIG_YAML.exists():
+        try:
+            with open(CONFIG_YAML, "r") as f:
+                cfg = yaml.safe_load(f) or {}
+            plugins = cfg.get("plugins", {})
+            enabled = plugins.get("enabled", [])
+            if isinstance(enabled, list):
+                new_enabled = [x for x in enabled if x not in ("skill-autoload", "cmg-guard")]
+                if new_enabled != enabled:
+                    plugins["enabled"] = new_enabled
+                    changed = True
+                    print("  - plugins.enabled: 移除 skill-autoload, cmg-guard")
+            if "skill_autoload" in cfg:
+                del cfg["skill_autoload"]
+                changed = True
+                print("  - 移除 skill_autoload 配置块")
+            if changed:
+                with open(CONFIG_YAML, "w") as f:
+                    yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                print("  ✅ config.yaml 已恢复")
+            else:
+                print("  ℹ️ config.yaml 无需修改")
+        except Exception as e:
+            print(f"  ⚠️ config.yaml 处理失败: {e}")
+    else:
+        print("  ℹ️ config.yaml 不存在")
+
+    # 2. Remove plugin dirs
+    for pdir in ("skill-autoload", "cmg-guard"):
+        path = HERMES_HOME / "plugins" / pdir
+        if path.exists():
+            shutil.rmtree(path)
+            print(f"  🗑  已删除: plugins/{pdir}/")
+            changed = True
+
+    # 3. Remove skill dirs
+    for sdir in ("canon", "guard", "mnemonic", "canon-mnemonic-guard"):
+        for base in (HERMES_HOME / "skills", HERMES_HOME / "skills" / "software-development"):
+            path = base / sdir
+            if path.exists():
+                shutil.rmtree(path)
+                rel = path.relative_to(HERMES_HOME / "skills")
+                print(f"  🗑  已删除: skills/{rel}/")
+                changed = True
+
+    # 4. Remove SOUL.md activation line
+    if SOUL_PATH.exists():
+        content = SOUL_PATH.read_text()
+        new_content = re.sub(r'\n?\[CMG v[\d.]+\].*\n?', '', content)
+        if new_content != content:
+            SOUL_PATH.write_text(new_content)
+            print("  - SOUL.md: 移除 CMG 激活标记")
+            changed = True
+        else:
+            print("  ℹ️ SOUL.md 无 CMG 标记")
+
+    # 5. Purge self-reflection data (only with --purge)
+    if purge:
+        if REF_DIR.exists():
+            shutil.rmtree(REF_DIR)
+            print("  🗑  --purge: 已删除 self-reflection/（含所有规则）")
+            changed = True
+    else:
+        rules_dir = REF_DIR / "rules"
+        if rules_dir.exists():
+            print(f"  ℹ️ 保留用户数据: {rules_dir}（规则/模式/状态均保留）")
+            print("    如需彻底清除，加 --purge 参数")
+
+    if changed:
+        print(f"\n✅ CMG 已卸载。重启 Hermes 生效。")
+    else:
+        print(f"\nℹ️ 未检测到 CMG 安装痕迹，无需卸载。")
+
+
 if __name__ == "__main__":
-    main()
+    if "--uninstall" in sys.argv:
+        uninstall()
+    else:
+        main()

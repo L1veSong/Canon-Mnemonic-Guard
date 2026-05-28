@@ -1,10 +1,10 @@
 ---
 name: canon-mnemonic-guard
-description: 三省引擎 (CMG) — 取自「吾日三省吾身」。典则(规则生产)+护栏(拦截执行)+忆存(模式识别)三线合一外观模式。v5.5.2 默认固化阈值10→3，修复init.py版本号滞后。对外 role:guard stage:pre_action，内部三模块各自独立。
-version: 5.5.2
+description: 三省引擎 (CMG) — 取自「吾日三省吾身」。典则(规则生产)+护栏(拦截执行)+忆存(模式识别)三线合一外观模式。v5.5.3 默认固化阈值10→3，修复init.py版本号滞后。对外 role:guard stage:pre_action，内部三模块各自独立。
+version: 5.5.3
 role: guard
 dependencies: [canon, guard, mnemonic]
-_comment: "v5.5.2 默认固化阈值10→3，修复init.py版本号滞后。Canon v2.7.2 + Guard v4.8.2 + Mnemonic v3.5.3。"
+_comment: "v5.5.3 默认固化阈值10→3，修复init.py版本号滞后。Canon v2.7.2 + Guard v4.8.2 + Mnemonic v3.5.3。"
 min_hermes_version: any
 platforms: [linux, macos, windows]
 author: L1veSong
@@ -15,7 +15,7 @@ metadata:
     related_skills: [canon, guard, mnemonic]
 ---
 
-# 三省引擎 (CMG) v5.5.2 — 四包制外观引擎
+# 三省引擎 (CMG) v5.5.3 — 四包制外观引擎
 
 > **对外身份**: guard (护栏) | **阶段**: pre_action | **中文名**: 三省引擎，取自「吾日三省吾身」
 > v5.5.0: +微型调度器 | v5.4.2: M3清零 | v5.4.0: 四大增强 | v5.2.0: 六大功能
@@ -28,7 +28,7 @@ metadata:
 
 | 版本 | 变更 |
 |------|------|
-| v5.5.2 | +默认固化阈值10→3 +修复init.py版本号滞后(跨两个大版本) |
+| v5.5.3 | +默认固化阈值10→3 +修复init.py版本号滞后(跨两个大版本) |
 | v5.5.1 | +README更新: 推荐skill-autoload插件自动加载CMG |
 | v5.4.2 | +M3清零: !patterns+!datasource。待优化表全部清零。Canon v2.7.1 / Guard v4.8.1 / Mnemonic v3.5.2 |
 | v5.4.1 | +P2补全: Guard session_id+Mnemonic联动钩子。Canon v2.7.1 / Guard v4.8.1 / Mnemonic v3.5.1 |
@@ -114,7 +114,7 @@ tags: [分类标签]
 **注入格式:**
 ```
 ═══════════════════════════════════════
-三省引擎 v5.5.2 · 永久规则 (自动注入)
+三省引擎 v5.5.3 · 永久规则 (自动注入)
 ═══════════════════════════════════════
 [从 rules/_index.md 的表格 + 各规则的 frontmatter 摘要]
 ═══════════════════════════════════════
@@ -154,7 +154,7 @@ tags: [分类标签]
 
 ### 6. 输出激活状态
 
-**必须输出**: "三省引擎 v5.5.2 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。典则·护栏·忆存。四包制。"
+**必须输出**: "三省引擎 v5.5.3 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒。典则·护栏·忆存。四包制。"
 
 **🔴 X/Y/Z 必须从 rules/ 目录实际文件数统计，禁止凭记忆或 state.json 的 total_rules 字段报数。** 统计命令：
 ```bash
@@ -635,7 +635,7 @@ v1.0.0 缺乏跨会话状态：
 
 ```
 ═══════════════════════════════════════
-CMG v5.5.2 协调日志
+CMG v5.5.3 协调日志
 ═══════════════════════════════════════
 📋 Canon 典则线 (v2.5.0)
   规则: 10条 (ban:6 / gap:2 / lazy:2)
@@ -732,7 +732,7 @@ CMG v5.5.2 协调日志
 
 ```
 ═══════════════════════════════════════
-CMG v5.5.2 诊断报告
+CMG v5.5.3 诊断报告
 ═══════════════════════════════════════
 📁 文件完整性: ✅ 5/5 通过
    rules/ ✓  state.json ✓  patterns.json ✓

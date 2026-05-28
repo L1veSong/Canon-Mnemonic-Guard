@@ -1,9 +1,10 @@
 name: cmg-guard
-version: 1.0.0
-description: Hard-enforce CMG ban rules via transform_llm_output hook. Scans AI output for rule violations and replaces violating content before the user sees it. Unlike the CMG skill (which relies on AI self-policing), this plugin blocks at the Hermes kernel level.
+version: 1.1.0
+description: Hard-enforce CMG ban rules via transform_llm_output hook + optional lightweight sentinel via pre_llm_call hook. Scans AI output for rule violations and user input for suspected corrections.
 author: L1veSong
 license: MIT
 provides_hooks:
   - transform_llm_output
+  - pre_llm_call
 kind: standalone
 homepage: https://github.com/L1veSong/CMG
