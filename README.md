@@ -110,7 +110,7 @@ python3 scripts/init.py --uninstall --purge
 
 ```
 canon/          v2.7.2   典则线 — 规则生产库
-guard/          v4.8.2   护栏线 — 规则执行器
+guard/          v4.8.3   护栏线 — 规则执行器（697→77行精炼版）
 mnemonic/       v3.5.3   忆存线 — 模式识别
 canon-mnemonic-guard/  v5.5.5   外观层 — 四包索引 + 微型调度器 + 四名冲突检测
 skill-autoload/ v1.0.1   Plugin — 自动加载（适配 Hermes ≥v0.14.0）

@@ -1,18 +1,20 @@
 # CMG 生态系统更新日志
 
-## v5.5.5 (2026-05-29) — cmg-guard v1.3.0 + 四名冲突检测
+## v5.5.5 (2026-05-30) — cmg-guard v1.3.0 + 四名冲突检测
 
 ### 新增
 - **cmg-guard v1.2.0 → v1.3.0**：17 个 hook 全面覆盖五阶段
   - **pre_tool_call 阻断**：直接 patch SKILL.md 未经 hermes-agent-skill-authoring → 内核拦截，AI 无执行机会
   - **自披露闭环**：AI 断言必须附带证据（「测试通过了」→ 无证据 → 拦截要求补充）
+  - **任务完成声明验证**：AI 声称「完成/搞定/已打包」→ 无核对痕迹 → 拦截
+  - **外部来源主张验证**：AI 声称「我看了/三个AI都同意/交叉验证」→ 无原文摘录 → 拦截
   - **拦截通知 visible 模式**：用户可见拦截详情，透明化
 - **四名冲突检测**：init.py 安装时 + !diagnose 启动时扫描 canon/guard/mnemonic/canon-mnemonic-guard 是否与第三方 skill 重名
 - **scripts/check-name-conflicts.py**：独立冲突检测工具，支持 --fix 交互修复
 - 冲突解决三选一：改第三方/改 CMG/两者都改/跳过
 
 ### 子包版本
-- canon v2.7.2 / guard v4.8.2 / mnemonic v3.5.3（无变更）
+- canon v2.7.2 / guard **v4.8.3**（文档精简 697→77 行）/ mnemonic v3.5.3（无变更）
 - canon-mnemonic-guard v5.5.5（+四名冲突检测 + cmg-guard v1.3.0）
 - skill-autoload v1.0.1（无变更）/ cmg-guard v1.3.0（17hooks + pre_tool_call阻断 + 自披露闭环）
 

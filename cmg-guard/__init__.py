@@ -1,7 +1,8 @@
 """
-cmg-guard v1.3.0: Full hook coverage + pre_tool_call enforcement.
+cmg-guard v1.3.0: Full hook coverage + pre_tool_call + completion-evidence + external-claim check.
 
 v1.3.0: + pre_tool_call SKILL.md edit gate (default ON)
+        + post_llm_call completion-without-evidence check (default ON)
         + session state tracking for authoring skill detection
         + configurable hook system (17 hooks, 4 default ON, 13 opt-in)
         + hook-enable check via config.yaml cmg_guard.hooks.*
@@ -408,7 +409,69 @@ def _transform_llm_output(response_text: str = "", **kwargs) -> Optional[str]:
 
 # ── Core: pre_llm_call ───────────────────────────────────────────────────
 
-def _pre_llm_call(user_message: str = "", **kwargs) -> Optional[dict]:
+# Task-type → recommended CMG companion tools
+_TASK_RECOMMENDATIONS = {
+    "打包|发布|部署|zip|上传|release|桌面": [
+        "ralph-loop（闭环验证，逐项核对不漏组件）",
+        "verification-before-completion（证据先于断言）",
+        "hermes-agent-skill-authoring（发布自检清单）",
+    ],
+    "写代码|开发|实现|重构|build|新建|创建.*项目": [
+        "tdd / test-driven-development（先写测试）",
+        "brainstorming（先想清楚再动手）",
+        "planning-with-files（文件持久化进度）",
+    ],
+    "调试|修复|bug|报错|不工作": [
+        "diagnose（四阶段根因调试）",
+        "systematic-debugging（理解bug再修复）",
+    ],
+    "测试|验证|test": [
+        "tdd / test-driven-development（RED-GREEN-REFACTOR）",
+        "verification-before-completion（完成前必须验证）",
+    ],
+    "写.*(文章|论文|文档|报告)": [
+        "planning-with-files（大纲持久化）",
+        "verification-before-completion（字数/格式校验）",
+    ],
+}
+
+_REC_SESSION_CACHE: Dict[str, set] = {}
+
+
+def _check_task_recommendations(user_message: str, session_id: str = "") -> Optional[str]:
+    """Scan user message for task keywords, suggest CMG companion tools.
+
+    Only fires once per session per task type to avoid spam.
+    """
+    if len(user_message) < 5:
+        return None
+
+    cache = _REC_SESSION_CACHE.setdefault(session_id, set())
+
+    suggestions = []
+    for pattern, tools in _TASK_RECOMMENDATIONS.items():
+        if re.search(pattern, user_message, re.IGNORECASE):
+            task_key = pattern[:20]
+            if task_key in cache:
+                continue
+            cache.add(task_key)
+            suggestions.extend(tools)
+
+    if not suggestions:
+        return None
+
+    tool_list = "\n".join(f"  • {t}" for t in suggestions)
+    msg = (
+        "[CMG 配套工具建议]\n"
+        "检测到任务类型，推荐启用以下 CMG 配套工具以确保质量：\n"
+        f"{tool_list}\n"
+        "以上为一次性提示，本会话内不再重复。"
+    )
+    logger.info("[cmg-guard] task recommendation: %d tools suggested", len(suggestions))
+    return msg
+
+
+def _pre_llm_call(user_message: str = "", session_id: str = "", **kwargs) -> Optional[dict]:
     if not _hook_enabled("pre_llm_call"):
         return None
     bl_msg = _scan_blacklist(user_message)
@@ -420,6 +483,9 @@ def _pre_llm_call(user_message: str = "", **kwargs) -> Optional[dict]:
         if flag:
             logger.info("[cmg-guard] sentinel: flagged suspected correction")
             return {"context": flag}
+    rec_msg = _check_task_recommendations(user_message, session_id)
+    if rec_msg:
+        return {"context": rec_msg}
     step_fail = _check_step_completeness(user_message, **kwargs)
     if step_fail:
         logger.info("[cmg-guard] step check: blocking LLM call")
@@ -429,12 +495,99 @@ def _pre_llm_call(user_message: str = "", **kwargs) -> Optional[dict]:
 
 # ── Core: post_llm_call ──────────────────────────────────────────────────
 
+# Completion-claim patterns
+_COMPLETION_CLAIM = re.compile(
+    r"(完成[了啦]?|好了|搞定|做完了|已创建|已写入|已更新"
+    r"|已修复|已打包|已发布|已部署|就绪|全部.*[过绿]"
+    r"|一切.*正常|到此.*结束|以上.*就是)",
+    re.IGNORECASE,
+)
+# Minimal data token: any digit, emoji marker, or path separator
+_DATA_TOKEN = re.compile(r"[\d✅❌⏳⚠️/~]")
+
+
+def _check_completion_evidence(response_text: str) -> Optional[str]:
+    """Detect task-completion claims with nothing substantive following them.
+
+    Abstract rule: after declaring something done, what's left?
+    If the reply ends right after the claim (or fills the rest with
+    vague words only), there's no evidence.  If there's substance —
+    numbers, paths, markers, anything specific — it passes.
+
+    Works for any task type because it doesn't enumerate valid evidence.
+    It checks whether the AI put anything verifiable after the claim.
+    """
+    # Find the last completion claim position
+    match = None
+    for m in _COMPLETION_CLAIM.finditer(response_text):
+        match = m
+    if match is None:
+        return None
+
+    after_claim = response_text[match.end():].strip()
+    # Strip whitespace-only content
+    after_meaningful = re.sub(r"\s+", "", after_claim)
+
+    # If no data token anywhere after the claim → intercept
+    # (removed length check — the issue is falsifiability, not brevity)
+    if not _DATA_TOKEN.search(after_claim):
+        logger.warning("[cmg-guard] completion claim with no substance after: %s", match.group())
+        return (
+            "[CMG-GUARD post_llm_call] 检测到任务完成声明"
+            f"（{match.group()}）但后面没有实质内容。\n"
+            "请在声明完成后附上可核对的具体数据。\n"
+            "禁止只报结论不报证据。"
+        )
+
+    return None
+
+
+# Claims-about-external-source patterns (post_llm_call v1.3.0)
+_EXTERNAL_CLAIM = re.compile(
+    r"(我看了|我确认|我读到|里面说|那边说|说了|讨论了|同意|验证过)"
+    r"|(三个AI|三方|交叉验证|两边都|都.*[同确])",
+    re.IGNORECASE,
+)
+# Must have actual quoted text, not just a claim about it
+_QUOTED_EVIDENCE = re.compile(
+    r"([「『\"'“].{3,}[」』\"'”)]"
+    r"|原文[:：].{3,}"
+    r"|摘录[:：].{3,})",
+)
+
+
+def _check_external_claims(response_text: str) -> Optional[str]:
+    """Detect claims about external-source content without actual quotes.
+
+    If AI says "I read link X / they discussed Y / three AIs agreed"
+    but doesn't include any actual quoted text from those sources,
+    the claim is unverifiable → intercept.
+    """
+    if not _EXTERNAL_CLAIM.search(response_text):
+        return None
+    if _QUOTED_EVIDENCE.search(response_text):
+        return None
+    logger.warning("[cmg-guard] external-source claim without quoted evidence")
+    return (
+        "[CMG-GUARD post_llm_call] 检测到对外部来源内容的主张"
+        "但未附带原文摘录。\n"
+        "如需引用外部链接/素材的内容，请附上具体摘录文字。\n"
+        "如链接无法访问，请明确说明「无法读取」，禁止猜测内容。"
+    )
+
+
 def _post_llm_call(response_text: str = "", **kwargs) -> Optional[str]:
     if not _hook_enabled("post_llm_call"):
         return None
     bl_msg = _scan_blacklist(response_text)
     if bl_msg:
         return bl_msg
+    evidence_fail = _check_completion_evidence(response_text)
+    if evidence_fail:
+        return evidence_fail
+    external_fail = _check_external_claims(response_text)
+    if external_fail:
+        return external_fail
     return None
 
 
