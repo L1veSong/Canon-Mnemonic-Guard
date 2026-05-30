@@ -1,5 +1,51 @@
 # CHANGELOG
 
+## v1.3.0 (2026-05-30)
+
+### 新增：17 Hook 全阶段覆盖 + pre_tool_call 阻断 + 自披露闭环
+
+**核心升级：** 从 3 个 hook 扩展到 17 个，覆盖工具调用层 / LLM 层 / 会话层 / 网关层 / 子 Agent 层全部五个阶段。
+
+**新增功能：**
+
+- **pre_tool_call 硬阻断**
+  - 直接调用 patch 工具修改 SKILL.md → 内核拦截，要求先加载 hermes-agent-skill-authoring + writing-skills
+  - 加载 authoring 后用 skill_manage 操作 → 放行
+  - 治本方案：不再依赖 AI 自觉遵守规则
+
+- **自披露闭环** (`post_llm_call`)
+  - AI 断言「测试通过了」但未附具体证据 → 拦截，要求补充验证结果
+  - 杜绝「张嘴就来」式结论
+
+- **拦截通知 visible 模式**
+  - 用户可选择 visible 模式，拦截详情透明输出
+
+- **17 Hook 全阶段覆盖**
+
+| 阶段 | Hook | 用途 |
+|------|------|------|
+| 工具调用 | `pre_tool_call` | SKILL.md 修改门禁 |
+| 工具调用 | `post_tool_call` | 工具调用后审计 |
+| 工具调用 | `transform_tool_result` | 工具假报检测 |
+| LLM | `pre_llm_call` | 步骤完整性 + 哨兵 + 黑名单 |
+| LLM | `post_llm_call` | 自披露闭环 + 二次黑名单 |
+| LLM | `pre_api_request` | API 请求前拦截 |
+| LLM | `post_api_request` | API 响应后审计 |
+| 输出 | `transform_llm_output` | 关键词硬拦截 |
+| 输出 | `transform_terminal_output` | 终端输出拦截 |
+| 会话 | `on_session_start` | 会话启动检查 |
+| 会话 | `on_session_end` | 会话结束审计 |
+| 会话 | `on_session_finalize` | 最终化检查 |
+| 会话 | `on_session_reset` | 重置检查 |
+| 网关 | `pre_gateway_dispatch` | 网关分发前拦截 |
+| 网关 | `pre_approval_request` | 审批请求前拦截 |
+| 网关 | `post_approval_response` | 审批响应后审计 |
+| 子 Agent | `subagent_stop` | 子 Agent 停止拦截 |
+
+**改进：**
+- Hook 从 3 个扩展到 17 个，默认开启 4 个核心 hook，其余按需配置
+- 拦截能力从「输出层事后」延伸到「调用层事前 + 全链路审计」
+
 ## v1.2.0 (2026-05-28)
 
 ### 新增：步骤完整性检查 + 分阶段升级

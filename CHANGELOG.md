@@ -1,18 +1,24 @@
 # CMG 生态系统更新日志
 
+## v5.5.5 (2026-05-29) — cmg-guard v1.3.0 + 四名冲突检测
+
+### 新增
+- **cmg-guard v1.2.0 → v1.3.0**：17 个 hook 全面覆盖五阶段
+  - **pre_tool_call 阻断**：直接 patch SKILL.md 未经 hermes-agent-skill-authoring → 内核拦截，AI 无执行机会
+  - **自披露闭环**：AI 断言必须附带证据（「测试通过了」→ 无证据 → 拦截要求补充）
+  - **拦截通知 visible 模式**：用户可见拦截详情，透明化
+- **四名冲突检测**：init.py 安装时 + !diagnose 启动时扫描 canon/guard/mnemonic/canon-mnemonic-guard 是否与第三方 skill 重名
+- **scripts/check-name-conflicts.py**：独立冲突检测工具，支持 --fix 交互修复
+- 冲突解决三选一：改第三方/改 CMG/两者都改/跳过
+
+### 子包版本
+- canon v2.7.2 / guard v4.8.2 / mnemonic v3.5.3（无变更）
+- canon-mnemonic-guard v5.5.5（+四名冲突检测 + cmg-guard v1.3.0）
+- skill-autoload v1.0.1（无变更）/ cmg-guard v1.3.0（17hooks + pre_tool_call阻断 + 自披露闭环）
+
+---
+
 ## v5.5.4 (2026-05-28) — cmg-guard v1.2.0
-
-### 2026-05-28 第二次更新 — 诊断报告美化
-
-- **SKILL.md 诊断报告格式重设计**：Unicode 圆角框 + 标题居中 + 简写治理
-  - 所有对外输出（诊断报告、协调日志）中 `CMG` 简写改为全名「三省引擎」
-  - 输出格式从 ASCII 粗框（`═══`）改为 Unicode 圆角框（`╭─╮│╰─╯`）
-  - 新增 ban 规则 rule_071：对外输出禁止 CMG 简写
-  - 新增坑点 22（correction_template 反斜杠 YAML 解析）和坑点 23（_index.md 漂移）
-- **子包版本**：canon v2.7.2 / guard v4.8.2 / mnemonic v3.5.3（无变更）
-- **桌面包已同步**：guard SKILL.md + CMG SKILL.md 从已安装版本更新到桌面包
-
-
 
 ### cmg-guard v1.1.0 → v1.2.0
 - **步骤完整性检查**：pre_llm_call 新增 4 条强制规则（链接完整阅读、文件覆盖度校验、Orchestrator clarify、Skill workflow 执行）

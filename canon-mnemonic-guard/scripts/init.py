@@ -303,7 +303,7 @@ def write_soul_activation():
         print("  ⚠️ SOUL.md 不存在，跳过激活标记")
         return False
 
-    marker = "[CMG v5.5.4] 加载 canon-mnemonic-guard 护栏规则\n"
+    marker = "[CMG v5.5.5] 加载 canon-mnemonic-guard 护栏规则\n"
 
     content = SOUL_PATH.read_text()
     if marker.strip() in content:
@@ -388,8 +388,32 @@ def install_subpackages(missing):
         print("  CMG 外观层会在此后每次启动时自动检测新安装的子包。")
 
 
+def check_cmg_name_conflicts():
+    """Check for CMG four-name conflicts with other installed skills."""
+    import subprocess
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "check-name-conflicts.py"
+    )
+    if not os.path.exists(script):
+        print("  ⚠️ check-name-conflicts.py 未找到，跳过冲突检测")
+        return True
+
+    result = subprocess.run(
+        [sys.executable, script, "--quiet"],
+        capture_output=True, text=True
+    )
+    output = result.stdout + result.stderr
+    print(output.strip())
+    
+    if result.returncode != 0:
+        print("\n⚠️ 检测到 CMG 四名冲突，进入交互修复...")
+        subprocess.run([sys.executable, script, "--fix"])
+        return False
+    return True
+
+
 def main():
-    print_header("CMG 三省引擎 v5.5.4 初始化")
+    print_header("CMG 三省引擎 v5.5.5 初始化")
 
     # Phase 0: Check sub-packages
     missing = check_subpackages()
@@ -397,6 +421,10 @@ def main():
         install_subpackages(missing)
     else:
         print("✅ 子包检测: guard / canon / mnemonic 全部已安装")
+
+    # Phase 0.5: Name conflict check
+    print_header("🔍 四名冲突检测")
+    check_cmg_name_conflicts()
 
     # Phase 1: Create directories
     create_directories()
@@ -452,7 +480,7 @@ def main():
     # Phase 8: SOUL activation
     print_header("⚡ 护栏自动激活")
     print("是否在 SOUL.md 中写入激活标记（一行），让护栏在每次对话自动生效？")
-    print(f"  一行内容: [CMG v5.5.4] 加载 canon-mnemonic-guard 护栏规则")
+    print(f"  一行内容: [CMG v5.5.5] 加载 canon-mnemonic-guard 护栏规则")
     print()
 
     if ask_yn("写入激活标记"):
