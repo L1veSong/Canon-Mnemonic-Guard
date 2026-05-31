@@ -1,116 +1,24 @@
-# CMG 生态系统更新日志
+# Changelog
 
-## v5.5.5 (2026-05-30) — cmg-guard v1.3.0 + 四名冲突检测
-
-### 新增
-- **cmg-guard v1.2.0 → v1.3.0**：17 个 hook 全面覆盖五阶段
-  - **pre_tool_call 阻断**：直接 patch SKILL.md 未经 hermes-agent-skill-authoring → 内核拦截，AI 无执行机会
-  - **自披露闭环**：AI 断言必须附带证据（「测试通过了」→ 无证据 → 拦截要求补充）
-  - **任务完成声明验证**：AI 声称「完成/搞定/已打包」→ 无核对痕迹 → 拦截
-  - **外部来源主张验证**：AI 声称「我看了/三个AI都同意/交叉验证」→ 无原文摘录 → 拦截
-  - **拦截通知 visible 模式**：用户可见拦截详情，透明化
-- **四名冲突检测**：init.py 安装时 + !diagnose 启动时扫描 canon/guard/mnemonic/canon-mnemonic-guard 是否与第三方 skill 重名
-- **scripts/check-name-conflicts.py**：独立冲突检测工具，支持 --fix 交互修复
-- 冲突解决三选一：改第三方/改 CMG/两者都改/跳过
-
-### 子包版本
-- canon v2.7.2 / guard **v4.8.3**（文档精简 697→77 行）/ mnemonic v3.5.3（无变更）
-- canon-mnemonic-guard v5.5.5（+四名冲突检测 + cmg-guard v1.3.0）
-- skill-autoload v1.0.1（无变更）/ cmg-guard v1.3.0（17hooks + pre_tool_call阻断 + 自披露闭环）
-
----
-
-## v5.5.4 (2026-05-28) — cmg-guard v1.2.0
-
-### cmg-guard v1.1.0 → v1.2.0
-- **步骤完整性检查**：pre_llm_call 新增 4 条强制规则（链接完整阅读、文件覆盖度校验、Orchestrator clarify、Skill workflow 执行）
-- **分阶段升级系统**：同一错误逐步升级（第1次标记→第2次警告→第3次推草稿→第5次黑名单）
-- **新增 post_llm_call 钩子**：AI 回复后二次黑名单扫描
-- 哨兵正则优化
-
-### 子包版本
-- canon v2.7.2 / guard v4.8.2 / mnemonic v3.5.3（无变更）
-- canon-mnemonic-guard v5.5.4（版本号跟踪）
-- skill-autoload v1.0.1（无变更）
-
----
-
-## v5.5.3 (2026-05-26) — 哨兵 + 一键部署
+## v5.6.0 (2026-05-31)
 
 ### 新增
+- **Dashboard v1.0.0**: 配套 Web 可视化仪表盘。规则浏览/搜索/筛选/排序，Hook 开关 + 拦截通知管理，7 个配套技能实时状态监控，中英文切换，亮暗主题，16 种交互动画，编辑悬浮窗，规则增删改查
+- **反思提示**: CMG 加载后自动注入 `[CMG 反思]` 提醒——每次行动前检查是否有更好的配套 skill。任何平台生效，无需 Plugin
+- **meta 类型**: 新增第四种规则类型"元规则"（rules/meta/ 目录），用于管 CMG 引擎自身的系统级规则
 
-- **双层哨兵**：A 层（cmg-guard Plugin）正则广撒网 + B 层（CMG Skill）LLM 语义判断，关键词漏网率从 80% 降至接近零
-- **意图识别优先规则**（rule_meta_001）：用户纠正自动触发 CMG 三步走，不等追问
-- **init.py 自动配置**：安装时自动写入 config.yaml（启用插件 + 自动加载），零手动
-- **一键卸载**：`python3 init.py --uninstall` 恢复安装前状态，不碰其他配置
+### 更新
+- **guard v4.8.3**: 文档精简，从 686 行压缩到 77 行。保留五层拦截器规格、cmg-guard 插件 Hook 表、安装命令和常见坑点
+- **cmg-guard v1.3.1**: 拦截范围从 patch/skill_manage + ~/.hermes/skills/ 扩展到 write_file/terminal/execute_code + 任意路径（含桌面）。每次拦截提示具体替代工具
+- **canon-mnemonic-guard 外观**: 新增 meta 类型目录、Dashboard 引用、反思提示注入、guard 版本号更新
 
-### 变更
+### 修复
+- Dashboard: 配套技能检测覆盖 5 个 Agent 目录 + 插件目录（Hermes / Claude Code / gstack / OpenClaw / Codex）
+- Dashboard: 配套技能列表排除个人工具，只保留公开推荐技能
+- Dashboard: 亮色主题圆角变量补全
+- Dashboard: `table-layout:fixed` + `padding:14px` 排序不抖不挤
+- Dashboard: Hook 保存独立按钮，按模块隔离不串扰
 
-- cmg-guard v1.0.0 → v1.1.0：新增 `pre_llm_call` sentinel hook（默认开启），三组正则覆盖 80%+ 纠正句式
-- skill-autoload v1.0.0 → v1.0.1：`pre_system_prompt` → `pre_llm_call`，适配 Hermes ≥v0.14.0
-- init.py：+Phase 7.5 自动配置 config.yaml，+--uninstall/--purge 卸载支持
-- README：重写为完整安装指南 + 兼容性矩阵
+## v5.5.5 (2026-05-30)
 
-### 兼容性
-
-- Hermes ≥v0.14.0：三层全开
-- Hermes ≤v0.13.x：skill-autoload 需降级到 v1.0.0（pre_system_prompt）
-- 其他 Agent：Skill 层可用，Plugin 层不可用
-
-### 子包版本
-
-- canon v2.7.2 / guard v4.8.2 / mnemonic v3.5.3（无变更）
-- canon-mnemonic-guard v5.5.3（+init.py 增强）
-
----
-
-## v5.5.1 (2026-05-25) — 三层闭环首次发布
-
-### 新增插件
-
-- skill-autoload v1.0.0：pre_system_prompt 自动加载 CMG
-- cmg-guard v1.0.0：transform_llm_output 硬拦截
-
-### canon-mnemonic-guard v5.5.1
-
-- README 更新为三层闭环说明
-- 配套生态加入两个新插件
-
----
-
-## v5.5.0 (2026-05-25) — 微型调度器
-
-- 微型调度器：Guard 拦截自动匹配配套 skill
-- P1-P4 全部完成
-
----
-
-## v5.4.0 (2026-05-24) — 大更
-
-- P1: 同会话升级 + P3: 用户纠正提升 + P4: 误报降级
-- Mnemonic v3.5.0: 上下文保留
-
----
-
-## v5.3.0 (2026-05-23) — 风险分级
-
-- Guard 风险分级（不可逆操作暂停确认）
-
----
-
-## v5.2.0 (2026-05-22) — 四包制
-
-- 定时扫盘 + 协调日志 + 一键诊断
-- !scan-recommendations
-
----
-
-## v5.1.0 (2026-05-21) — 四包分装
-
-- Canon / Guard / Mnemonic 物理拆分
-
----
-
-## v5.0.0 (2026-05-20) — 三线合一
-
-- 典则 + 护栏 + 忆存 → 三省引擎
+cmg-guard v1.3.0 + 四名冲突检测。详见 v5.5.5 发布说明。

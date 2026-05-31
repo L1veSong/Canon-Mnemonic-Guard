@@ -85,6 +85,13 @@ def _step_check_enabled() -> bool:
     return bool(cfg["step_check"])
 
 
+def _task_recommendations_enabled() -> bool:
+    cfg = _load_cmg_config()
+    if "task_recommendations" not in cfg:
+        return True
+    return bool(cfg["task_recommendations"])
+
+
 # ---------------------------------------------------------------------------
 # Session state tracking (NEW v1.3.0)
 # ---------------------------------------------------------------------------
@@ -483,9 +490,10 @@ def _pre_llm_call(user_message: str = "", session_id: str = "", **kwargs) -> Opt
         if flag:
             logger.info("[cmg-guard] sentinel: flagged suspected correction")
             return {"context": flag}
-    rec_msg = _check_task_recommendations(user_message, session_id)
-    if rec_msg:
-        return {"context": rec_msg}
+    if _task_recommendations_enabled():
+        rec_msg = _check_task_recommendations(user_message, session_id)
+        if rec_msg:
+            return {"context": rec_msg}
     step_fail = _check_step_completeness(user_message, **kwargs)
     if step_fail:
         logger.info("[cmg-guard] step check: blocking LLM call")
@@ -599,12 +607,18 @@ def _pre_tool_call(
     session_id: str = "",
     **kwargs,
 ) -> Optional[dict]:
-    """Block SKILL.md edits without authoring skills loaded."""
+    """Block SKILL.md edits without authoring skills loaded.
+    
+    v1.3.1: Expanded to cover write_file, terminal, execute_code, and
+    any path (not just ~/.hermes/skills/). Also adds reflection prompt
+    for skill selection awareness.
+    """
     if not _hook_enabled("pre_tool_call"):
         return None
 
     args = args or {}
-    path = str(args.get("path", "") or args.get("file_path", ""))
+    path = str(args.get("path", "") or args.get("file_path", "") or args.get("name", ""))
+    command = str(args.get("command", "") or args.get("code", ""))
 
     # 1. Detect: loading authoring skills → set session flag
     if tool_name == "skill_view":
@@ -620,15 +634,34 @@ def _pre_tool_call(
                 logger.info("[cmg-guard] session %s: authoring skills loaded ✓", session_id[:12])
             return None
 
-    # 2. Block: SKILL.md edits without authoring skills loaded
-    if tool_name in ("patch", "skill_manage") and "SKILL.md" in path:
+    # 2. Block: any SKILL.md modification without authoring loaded
+    targets_skill_md = "SKILL.md" in path or "SKILL.md" in command
+    
+    if targets_skill_md:
         session = _get_session(session_id)
         if not session.get("authoring_loaded"):
-            logger.warning("[cmg-guard] BLOCK: %s on SKILL.md without authoring (session %s)", tool_name, session_id[:12])
+            # Determine the correct tool to suggest
+            if tool_name in ("skill_manage",):
+                suggestion = "skill_manage(action='patch', ...)"
+            elif tool_name in ("patch",):
+                suggestion = "先试 skill_manage(action='patch')，不行再降级并说明原因"
+            elif tool_name in ("write_file",):
+                suggestion = "skill_manage(action='edit', ...) 或 skill_manage(action='patch', ...)"
+            elif tool_name in ("terminal",):
+                suggestion = "不要用 terminal 改 SKILL.md。用 skill_manage(action='patch')"
+            elif tool_name in ("execute_code",):
+                suggestion = "不要用 execute_code 改 SKILL.md。用 skill_manage(action='patch')"
+            else:
+                suggestion = "skill_manage(action='patch')"
+            
+            logger.warning("[cmg-guard] BLOCK: %s on SKILL.md (path=%s, cmd=%s) session %s", 
+                          tool_name, path[:80], command[:80], session_id[:12])
             return {
                 "action": "block",
                 "message": (
                     "[CMG-GUARD pre_tool_call] 修改 SKILL.md 前必须先加载 skill 编写规范。\n"
+                    f"检测到: {tool_name} 操作目标含 SKILL.md\n"
+                    f"建议: {suggestion}\n"
                     "请先执行: skill_view('hermes-agent-skill-authoring')\n"
                     "      然后: skill_view('writing-skills')\n"
                     "加载后根据规范选择适合你的工具和流程。"

@@ -1,6 +1,6 @@
 ---
 name: guard
-description: 三省引擎(CMG)护栏线 (Guard) — 规则执行器。读取 Canon 规则库，执行五层前置拦截。Hermes 平台搭配 cmg-guard 插件实现内核级硬拦截，其他平台靠 Skill 层自觉。v4.8.3 文档精简。
+description: 三省引擎(Canon-Mnemonic-Guard)护栏线 (Guard) — 规则执行器。读取 Canon 规则库，执行五层前置拦截。Hermes 平台搭配 cmg-guard 插件实现内核级硬拦截，其他平台靠 Skill 层自觉。v4.8.3 文档精简。
 version: 4.8.3
 role: guard
 stage: pre_action
