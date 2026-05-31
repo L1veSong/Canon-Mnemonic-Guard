@@ -198,6 +198,31 @@ def read_stats():
         'last_solidify': str(state.get('last_solidify_at', '')),
     }
 
+def read_intercept_trend():
+    from collections import defaultdict
+    import datetime as _dt
+    ilog = os.path.join(SR, 'intercept_log.jsonl')
+    if not os.path.exists(ilog):
+        return {'days': [], 'counts': [], 'total': 0}
+    now = _dt.datetime.now(_dt.timezone.utc)
+    counts = defaultdict(int)
+    total = 0
+    with open(ilog) as f:
+        for line in f:
+            line = line.strip()
+            if not line: continue
+            try:
+                entry = json.loads(line)
+                ts = entry.get('timestamp', '')
+                if ts:
+                    dt = _dt.datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                    days_ago = (now - dt).days
+                    if 0 <= days_ago < 30: counts[days_ago] += 1
+                total += 1
+            except: total += 1
+    days = list(range(29, -1, -1))
+    return {'days': days, 'counts': [counts.get(d, 0) for d in days], 'total': total}
+
 def read_config():
     """Read cmg_guard section from config.yaml."""
     if not os.path.exists(CONFIG_PATH):
@@ -278,30 +303,34 @@ def delete_rule(rule_id: str):
     return False, f'规则 {rule_id} 不存在'
 
 def update_rule(data: dict):
-    """Update a rule's keywords and description."""
+    """Update a rule's keywords, description, and optionally type."""
     rule_id = data.get('id', '').strip()
     if not rule_id:
         return False, 'no id provided'
+    new_type = data.get('type', '').strip()
+    if new_type and new_type not in ('ban', 'gap', 'lazy', 'meta'):
+        new_type = ''
     for cat in ['ban', 'gap', 'lazy', 'meta']:
         d = os.path.join(SR, 'rules', cat)
-        if not os.path.isdir(d):
-            continue
+        if not os.path.isdir(d): continue
         for f in glob.glob(os.path.join(d, '*.md')):
             fm, body = parse_frontmatter(f)
             if fm.get('id') == rule_id:
-                if 'keywords' in data:
-                    fm['keywords'] = data['keywords']
+                if 'keywords' in data: fm['keywords'] = data['keywords']
                 if 'description' in data:
-                    new_desc = data['description'].strip()
-                    if new_desc:
-                        body = f'# {rule_id}\n\n{new_desc}\n'
-                    else:
-                        body = ''
+                    d2 = data['description'].strip()
+                    body = f'# {rule_id}\n\n{d2}\n' if d2 else ''
+                if new_type: fm['type'] = new_type
                 md = '---\n' + yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip() + '\n---\n'
-                if body:
-                    md += '\n' + body
-                with open(f, 'w') as fh:
-                    fh.write(md)
+                if body: md += '\n' + body
+                if new_type and new_type != cat:
+                    nd = os.path.join(SR, 'rules', new_type)
+                    os.makedirs(nd, exist_ok=True)
+                    np = os.path.join(nd, os.path.basename(f))
+                    with open(np, 'w') as fh: fh.write(md)
+                    os.remove(f)
+                    return True, np
+                with open(f, 'w') as fh: fh.write(md)
                 return True, f
     return False, f'规则 {rule_id} 不存在'
 
@@ -403,6 +432,19 @@ header h1 { font-size:22px; font-weight:600; color:var(--text-primary); letter-s
 .stat-card.warn { border-color:rgba(248,81,73,0.3); }
 .stat-card.warn .value { color:var(--red); }
 
+.export-btn {
+  background:var(--bg-elevated); border:1px solid var(--border-std); border-radius:var(--radius-sm);
+  color:var(--text-secondary); font-size:12px; padding:5px 12px; cursor:pointer; font-family:inherit;
+  transition:all 0.15s ease; margin-left:8px;
+}
+.export-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+.trend-card {
+  background:var(--bg-surface); border:1px solid var(--border-std); border-radius:var(--radius);
+  padding:12px 16px; margin-bottom:20px; animation: cardIn 0.4s 0.35s ease backwards;
+}
+.trend-card canvas { width:100%; height:160px; }
+
 .toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-bottom:10px; }
 .toolbar input, .toolbar select {
   background:var(--bg-surface); border:1px solid var(--border-std); border-radius:var(--radius-sm);
@@ -418,10 +460,10 @@ header h1 { font-size:22px; font-weight:600; color:var(--text-primary); letter-s
 .toolbar-input { background:var(--bg-surface); border:1px solid var(--border-std); border-radius:var(--radius-sm); color:var(--text-primary); padding:7px 12px; font-size:13px; font-family:inherit; }
 .toolbar-input::placeholder { color:var(--text-muted); }
 
-.table-wrap { overflow:visible; border-radius:var(--radius); border:1px solid var(--border-std); transition:border-color 0.2s; }
+.table-wrap { overflow:auto; max-height:600px; border-radius:var(--radius); border:1px solid var(--border-std); transition:border-color 0.2s; }
 .table-wrap:focus-within { border-color:var(--accent); }
 table { width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
-thead { background:var(--bg-panel); }
+thead { background:var(--bg-panel); position:sticky; top:0; z-index:2; }
 th {
   text-align:left; padding:11px 14px; font-weight:600; color:var(--text-tertiary);
   font-size:13px; text-transform:uppercase; letter-spacing:0.5px;
@@ -463,7 +505,7 @@ tr.detail-row td {
   font-size:13px; color:var(--text-secondary); line-height:1.7;
 }
 tr.detail-row .detail-label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; }
-tr.clickable { cursor:pointer; }
+tr.clickable { cursor:pointer; user-select:none; }
 tr.clickable:hover { background:var(--bg-surface); }
 .false-high { color:var(--red); font-weight:600; }
 .stale { color:var(--text-muted); font-style:italic; }
@@ -621,6 +663,9 @@ footer { text-align:center; padding:20px; color:var(--text-muted); font-size:12p
   <!-- Rules Tab -->
   <div class="tab-panel active" id="tab-rules">
     <div class="stats" id="stats"></div>
+    <div class="trend-card" id="trendCard" style="display:none">
+      <canvas id="trendCanvas" height="160"></canvas>
+    </div>
     <div class="toolbar">
       <input type="text" id="search" placeholder="搜索规则 ID 或关键词…" oninput="renderRules()">
       <select id="typeFilter" onchange="renderRules()">
@@ -631,6 +676,12 @@ footer { text-align:center; padding:20px; color:var(--text-muted); font-size:12p
         <option value="meta" data-i18n="meta_label">meta · 元规则</option>
       </select>
       <span style="font-size:12px;color:var(--text-muted)" id="rowCount"></span>
+      <button class="export-btn" onclick="exportRules()">⬇ 导出</button>
+      <button class="export-btn" id="batchToggle" onclick="toggleBatchMode()">☐ 批量</button>
+      <span id="batchActions" style="display:none">
+        <span class="export-btn" id="selectAllBtn" onclick="toggleSelectAllBtn()" style="cursor:pointer">☐ 全选</span>
+        <button class="export-btn" onclick="batchDelete()" style="color:var(--red);border-color:var(--red);margin-left:8px">批量删除</button>
+      </span>
     </div>
     <div class="table-wrap">
       <table>
@@ -742,6 +793,12 @@ footer { text-align:center; padding:20px; color:var(--text-muted); font-size:12p
   <div class="modal-box">
     <h2 id="modalTitle" data-i18n="edit_title">编辑规则</h2>
     <div><label data-i18n="modal_id">规则 ID</label><input id="modalId" disabled style="opacity:0.6;cursor:not-allowed"></div>
+    <div><label data-i18n="add_type">规则类型</label><select id="modalType" class="notice-select" style="width:100%;">
+      <option value="ban" data-i18n="ban_label">ban · 禁止项</option>
+      <option value="gap" data-i18n="gap_label">gap · 缺失项</option>
+      <option value="lazy" data-i18n="lazy_label">lazy · 偷懒项</option>
+      <option value="meta" data-i18n="meta_label">meta · 元规则</option>
+    </select></div>
     <div><label data-i18n="modal_keywords">关键词（逗号分隔）</label><input id="modalKeywords" data-i18n-ph="modal_kw_ph" placeholder="关键词1, 关键词2, 关键词3"></div>
     <div><label data-i18n="modal_desc">规则描述</label><textarea id="modalDesc" data-i18n-ph="modal_desc_ph" placeholder="描述这条规则禁止/要求什么行为…"></textarea></div>
     <div class="modal-actions">
@@ -824,10 +881,21 @@ function renderRules() {
     if (va < vb) return -sortDir; if (va > vb) return sortDir; return 0;
   });
   var html = '';
-  for (var i = 0; i < rows.length; i++) {
+  // Virtual scroll: only render visible rows
+  var ROW_H = 37, BUF = 5;
+  var wrap = document.querySelector('.table-wrap');
+  var st = wrap ? wrap.scrollTop : 0;
+  var vc = wrap ? Math.ceil(wrap.clientHeight / ROW_H) + BUF : rows.length;
+  var start = Math.max(0, Math.floor(st / ROW_H) - BUF);
+  var end = Math.min(rows.length, start + vc + BUF * 2);
+  if (start > 0) html += '<tr style="height:'+(start*ROW_H)+'px"><td colspan="7"></td></tr>';
+  for (var i = start; i < end; i++) {
     var r = rows[i], fr = parseFloat(falseRate(r));
-    html += '<tr id="row-'+r.id+'" class="clickable" data-rid="'+r.id+'" onclick="toggleDetail(this.dataset.rid)">'+
-      '<td class="del-col"><button class="del-btn" data-rid="'+r.id+'" onclick="deleteRule(this.dataset.rid)" title="'+t('delete_title')+'">🗑</button></td>'+
+    html += '<tr id="row-'+r.id+'" class="clickable" data-rid="'+r.id+'" onclick="'+(batchMode?'toggleRowCb(this)':'toggleDetail(this.dataset.rid)')+'">'+
+      '<td class="del-col" style="text-align:center">'+
+        '<button class="del-btn" data-rid="'+r.id+'" onclick="deleteRule(this.dataset.rid)" title="'+t('delete_title')+'">🗑</button>'+
+        '<input type="checkbox" class="row-cb" data-rid="'+r.id+'" onclick="event.stopPropagation()" style="cursor:pointer;display:none">'+
+      '</td>'+
       '<td style="font-family:JetBrains Mono,monospace;font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+r.id+'">'+r.id+'</td>'+
       '<td><span class="type-badge type-'+r.type+'">'+r.type+'</span></td>'+
       '<td>'+r.hit_count+'</td>'+
@@ -837,10 +905,18 @@ function renderRules() {
     '</tr>'+
       '<tr class="detail-row" id="detail-'+r.id+'"><td colspan="7"><span class="detail-label">'+t('detail_date')+'</span> '+(r.date||'—')+' &nbsp;·&nbsp; <span class="detail-label">'+t('detail_last')+'</span> '+(r.last_triggered||'—')+' &nbsp;·&nbsp; <span class="detail-label">'+t('detail_fp')+'</span> '+r.false_positives+'/'+r.hit_count+' &nbsp;·&nbsp; <span class="detail-label">'+t('detail_source')+'</span> '+(r.source||'—')+' &nbsp; <button class="edit-rule-btn" onclick="event.stopPropagation();openEditModal(this.closest(&apos;tr&apos;).previousElementSibling.dataset.rid)" title="'+t('edit_title')+'">'+t('edit_btn')+'</button></td></tr>';
   }
+  if (end < rows.length) html += '<tr style="height:'+((rows.length-end)*ROW_H)+'px"><td colspan="7"></td></tr>';
   document.getElementById('tbody').innerHTML = html;
   document.getElementById('rowCount').textContent = rows.length+' / '+rulesData.length+' '+t('row_unit');
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if (batchMode) { applyBatchMode(true); document.querySelectorAll('.row-cb').forEach(function(cb){ cb.checked = !!selectedIds[cb.dataset.rid]; }); }
 }
+
+// Virtual scroll listener
+document.addEventListener('DOMContentLoaded', function(){
+  var w = document.querySelector('.table-wrap');
+  if (w) w.addEventListener('scroll', function(){ renderRules(); });
+});
 
 function sortRules(key) {
   if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = -1; }
@@ -1052,6 +1128,7 @@ function openEditModal(id) {
   if (!r) return;
   editingRuleId = id;
   document.getElementById('modalId').value = id;
+  document.getElementById('modalType').value = r.type || 'ban';
   document.getElementById('modalKeywords').value = (r.keywords||[]).join(', ');
   document.getElementById('modalDesc').value = r.description || '';
   document.getElementById('editModal').classList.add('show');
@@ -1069,9 +1146,10 @@ function saveEdit() {
   var kwRaw = document.getElementById('modalKeywords').value;
   var keywords = kwRaw.split(',').map(function(k){return k.trim();}).filter(Boolean);
   var desc = document.getElementById('modalDesc').value.trim();
+  var newType = document.getElementById('modalType').value;
   fetch('/api/rules', {
     method:'PUT',
-    body:JSON.stringify({id:editingRuleId, keywords:keywords, description:desc})
+    body:JSON.stringify({id:editingRuleId, keywords:keywords, description:desc, type:newType})
   })
   .then(function(r){return r.json();})
   .then(function(d){
@@ -1260,6 +1338,102 @@ function switchLang() {
   applyLang();
 }
 
+// ── Trend Chart ──
+function renderTrend(d) {
+  var card = document.getElementById('trendCard');
+  card.style.display = 'block';
+  var maxVal = Math.max.apply(null, d.counts) || 1;
+  if (d.counts.every(function(c){return c===0;})) {
+    card.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px">近30天无拦截记录</div>';
+    return;
+  }
+  var canvas = document.getElementById('trendCanvas');
+  var ctx = canvas.getContext('2d');
+  var w = canvas.parentElement.clientWidth - 32;
+  canvas.width = w; canvas.height = 160;
+  var barW = Math.max(4, (w - 60) / d.days.length - 2);
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(40, 140); ctx.lineTo(w - 10, 140); ctx.stroke();
+  d.counts.forEach(function(c, i){
+    var x = 42 + i * (barW + 2), h = Math.max(2, (c / maxVal) * 115);
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    ctx.fillStyle = c > 0 ? (dark ? '#7c7cff' : '#5c5cff') : (dark ? '#30363d' : '#e1e4e8');
+    ctx.fillRect(x, 140 - h, barW, h);
+    if (i % 5 === 0) { ctx.fillStyle = dark ? '#8b949e' : '#656d76'; ctx.font = '9px Inter'; ctx.textAlign = 'center'; ctx.fillText('-' + d.days[i] + 'd', x + barW/2, 155); }
+  });
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  ctx.fillStyle = dark ? '#8b949e' : '#656d76'; ctx.font = '9px Inter'; ctx.textAlign = 'right';
+  ctx.fillText(maxVal, 35, 25);
+}
+
+// ── Rule Export ──
+function exportRules() {
+  var a = document.createElement('a');
+  a.href = '/api/rules/export';
+  a.download = 'cmg-rules-export.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ── Batch Operations ──
+var batchMode = false, selectedIds = {}, selectAllOn = false;
+function applyBatchMode(show) {
+  document.querySelectorAll('.del-btn').forEach(function(b){ b.style.display = show ? 'none' : ''; });
+  document.querySelectorAll('.row-cb').forEach(function(cb){ cb.style.display = show ? '' : 'none'; });
+}
+function toggleBatchMode() {
+  batchMode = !batchMode;
+  document.getElementById('batchToggle').textContent = batchMode ? '☑ 取消' : '☐ 批量';
+  document.getElementById('batchActions').style.display = batchMode ? 'inline' : 'none';
+  if (!batchMode) { selectAllOn = false; selectedIds = {}; document.querySelectorAll('.row-cb').forEach(function(cb){ cb.checked = false; }); }
+  else { selectAllOn = false; selectedIds = {}; document.getElementById('selectAllBtn').textContent = '☐ 全选'; }
+  applyBatchMode(batchMode);
+  renderRules();
+}
+function toggleSelectAllBtn() {
+  selectAllOn = !selectAllOn;
+  document.getElementById('selectAllBtn').textContent = selectAllOn ? '☑ 全选' : '☐ 全选';
+  var list = window._vrows || rulesData;
+  if (selectAllOn) { list.forEach(function(r){ selectedIds[r.id] = true; }); }
+  else { selectedIds = {}; }
+  document.querySelectorAll('.row-cb').forEach(function(cb){ cb.checked = selectAllOn; });
+}
+function toggleRowCb(tr) {
+  var cb = tr.querySelector('.row-cb');
+  if (!cb) return;
+  if (window.event && window.event.shiftKey && window._lastBatchIdx >= 0) {
+    var cbs = document.querySelectorAll('.row-cb');
+    var idx = Array.from(cbs).indexOf(cb);
+    var lo = Math.min(window._lastBatchIdx, idx), hi = Math.max(window._lastBatchIdx, idx);
+    var state = !cb.checked;
+    for (var i = lo; i <= hi; i++) {
+      if (cbs[i]) { cbs[i].checked = state; if (state) selectedIds[cbs[i].dataset.rid] = true; else delete selectedIds[cbs[i].dataset.rid]; }
+    }
+  } else {
+    cb.checked = !cb.checked;
+    if (cb.checked) selectedIds[cb.dataset.rid] = true; else delete selectedIds[cb.dataset.rid];
+  }
+  window._lastBatchIdx = Array.from(document.querySelectorAll('.row-cb')).indexOf(cb);
+  updateBatchCount();
+}
+function updateBatchCount() {
+  var n = Object.keys(selectedIds).length;
+  var btn = document.getElementById('selectAllBtn');
+  btn.textContent = n > 0 ? (currentLang==='en'?'Sel ':'已选 ')+n : (selectAllOn?'☑ 全选':'☐ 全选');
+}
+function batchDelete() {
+  var ids = Object.keys(selectedIds);
+  if (!ids.length) return;
+  if (!confirm(ids.length + ' 条规则将被删除，不可恢复。继续？')) return;
+  var done = 0;
+  ids.forEach(function(id){
+    fetch('/api/rules', {method:'DELETE', body:JSON.stringify({id:id})})
+      .then(function(r){return r.json()})
+      .then(function(d){ done++; if (done === ids.length) { fetch('/api/rules').then(function(r){return r.json()}).then(function(d2){ rulesData = d2; renderRules(); }); } });
+  });
+}
+
 // ── Theme ──
 function toggleTheme() {
   var html = document.documentElement;
@@ -1316,6 +1490,9 @@ function loadAll() {
     d.forEach(function(s){ origCompanion[s.id] = s.enabled; });
     configData.companion_skills = JSON.parse(JSON.stringify(origCompanion));
   });
+  fetch('/api/trend').then(function(r){return r.json()}).then(function(d){
+    if (d.days && d.days.length) renderTrend(d);
+  });
   setInterval(function(){
     document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   }, 1000);
@@ -1345,6 +1522,10 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self._serve_json(read_config())
         elif path == '/api/companion':
             self._serve_json(read_companion_skills())
+        elif path == '/api/rules/export':
+            self._serve_zip_export()
+        elif path == '/api/trend':
+            self._serve_json(read_intercept_trend())
         else:
             self.send_error(404)
 
@@ -1384,6 +1565,22 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
+
+    def _serve_zip_export(self):
+        import io, zipfile
+        buf = io.BytesIO()
+        rules_dir = os.path.join(SR, 'rules')
+        with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+            if os.path.isdir(rules_dir):
+                for f in glob.glob(os.path.join(rules_dir, '**', '*.md'), recursive=True):
+                    zf.write(f, os.path.relpath(f, rules_dir))
+        buf.seek(0)
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/zip')
+        self.send_header('Content-Disposition', 'attachment; filename="cmg-rules-export.zip"')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(buf.read())
 
     def do_PUT(self):
         path = urllib.parse.urlparse(self.path).path
