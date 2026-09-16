@@ -22,7 +22,7 @@ grep -E "cmg|unknown hook" ~/.hermes/logs/agent.log | tail -5
 ## 修复
 
 1. 恢复 CMG 四包：从 zip 备份或 GitHub (`L1veSong/Canon-Mnemonic-Guard`) 复制到 `~/.hermes/skills/`
-2. 迁移 skill-autoload 到 `pre_llm_call`（见 `hermes-agent` skill 的 `references/skill-autoload-plugin.md`）
+2. 迁移 skill-autoload 到 `pre_llm_call`（见 `hermes-agent` 技能内的 `skill-autoload-plugin.md`）
 3. 添加 SOUL.md 激活行作为双保险
 4. 重启 Hermes，验证 agent.log 无 `unknown hook` 警告
 

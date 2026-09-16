@@ -863,14 +863,14 @@ v1.0.0 缺乏跨会话状态：
 
 ---
 
-- [SSR A 层静默失败诊断](references/ssr-a-layer-silent-failure-diagnostic.md) — 2026-07-03：zero A-layer hits 根因链(embedding API key 失效→_embed() 返回 None→整个分支跳过→坠落 B 层)+_similarity_floor 日志误导信号+curl 验证步骤
-- [SSR Embedding Floor 校准方法论](references/ssr-embedding-floor-calibration.md) — 2026-07-03：噪声基准→分位数→候选 floor 对比→model_scores.json 校准，含 Qwen3-8B 实测数据+截断 key 误判坑点(embedding API key 失效→_embed() 返回 None→整个分支跳过→坠落 B 层)+_similarity_floor 日志误导信号+curl 验证步骤
-- [SSR B 层调试全记录](references/ssr-b-layer-debugging.md) — 2026-07-05：1次会话7轮修复，B 层 401→超时→JSON→key→签名全链路。核心教训：修 bug 前先确认 bug 在执行路径上。含最小可工作配置（本地/云API/仅A层）。 — 2026-07-03：噪声基准→分位数→候选 floor 对比→model_scores.json 校准，含 Qwen3-8B 实测数据+截断 key 误判坑点(embedding API key 失效→_embed() 返回 None→整个分支跳过→坠落 B 层)+_similarity_floor 日志误导信号+curl 验证步骤
-- [SSR Benchmark 解读指南](references/ssr-benchmark-interpretation.md) — 2026-07-04：三步验证 #3 根因定位。`--mode embedding` 裸层物理极限 11/20，非 bug。禁止据此修改生产 merge 逻辑。
-- [web_extract 判断规则](references/web-extract-judgment-rules.md) — 2026-06-28 用户纠正：不强制先 web_extract，自行判断站点类型选择 browser 或 web_extract
+- SSR A 层静默失败诊断（本地文档：ssr-a-layer-silent-failure-diagnostic.md） — 2026-07-03：zero A-layer hits 根因链(embedding API key 失效→_embed() 返回 None→整个分支跳过→坠落 B 层)+_similarity_floor 日志误导信号+curl 验证步骤
+- SSR Embedding Floor 校准方法论（本地文档：ssr-embedding-floor-calibration.md） — 2026-07-03：噪声基准→分位数→候选 floor 对比→model_scores.json 校准，含 Qwen3-8B 实测数据+截断 key 误判坑点(embedding API key 失效→_embed() 返回 None→整个分支跳过→坠落 B 层)+_similarity_floor 日志误导信号+curl 验证步骤
+- SSR B 层调试全记录（本地文档：ssr-b-layer-debugging.md） — 2026-07-05：1次会话7轮修复，B 层 401→超时→JSON→key→签名全链路。核心教训：修 bug 前先确认 bug 在执行路径上。含最小可工作配置（本地/云API/仅A层）。 — 2026-07-03：噪声基准→分位数→候选 floor 对比→model_scores.json 校准，含 Qwen3-8B 实测数据+截断 key 误判坑点(embedding API key 失效→_embed() 返回 None→整个分支跳过→坠落 B 层)+_similarity_floor 日志误导信号+curl 验证步骤
+- SSR Benchmark 解读指南（本地文档：ssr-benchmark-interpretation.md） — 2026-07-04：三步验证 #3 根因定位。`--mode embedding` 裸层物理极限 11/20，非 bug。禁止据此修改生产 merge 逻辑。
+- web_extract 判断规则（本地文档：web-extract-judgment-rules.md） — 2026-06-28 用户纠正：不强制先 web_extract，自行判断站点类型选择 browser 或 web_extract
 - [SSR 集成](references/ssr-integration.md) — 智配路由插件与 CMG 的协作关系、互补设计
 - [SSR GREEN 基准 v2](references/ssr-green-benchmark-v2.md) — bge-m3 中文领域术语盲区验证（2026-06-09）
-- [SSR v2.1.0 全量审计](references/ssr-v2.1.0-audit-20260623.md) — 2026-06-23 全文件 grep 审计，CHANGELOG 声称 vs 代码实际逐条验证
+- SSR v2.1.0 全量审计（本地文档：ssr-v2.1.0-audit-20260623.md） — 2026-06-23 全文件 grep 审计，CHANGELOG 声称 vs 代码实际逐条验证
 - [SSR 基准测试脚本](scripts/ssr-green-benchmark.py) — 独立运行 embedding 匹配精度测试
 - [init.py 名冲突检测设计](references/init-name-conflict-detection.md) — CMG 四名保护 + 双触发点检测 + 三选一解决
 - [联动待测清单](references/integration-test-checklist.md) — ralph-loop/VBC/diagnose 验证条件和状态
@@ -886,24 +886,24 @@ v1.0.0 缺乏跨会话状态：
 - [对外命名规范](references/naming-convention-public-docs.md) — 禁止在对外文档中使用项目缩写，必须用完整名称
 - [GUI 壳子设计工作流](references/gui-shell-design-workflow.md) — 不要手写 CSS，先加载设计 tokens
 - [DeepSeek 外部评审对照](references/deepseek-review-2026-06-09.md) — 2026-06-09 三组对话评审，17条建议逐项对照 CMG 现状
-- [规则治理计划](~/.hermes/plans/cmg/rule-governance_task_plan.md) — SkillOS 论文启发：!review 命令，利用 hit_count 数据做规则减负（2026-06-13）
-- [CMG 最优升级方案](~/.hermes/plans/cmg/optimal-upgrade_plan.md) — v1.5.0→v2.0.0 完整路线图（2026-06-14）
+- 规则治理计划（本机：~/.hermes/plans/cmg/rule-governance_task_plan.md） — SkillOS 论文启发：!review 命令，利用 hit_count 数据做规则减负（2026-06-13）
+- CMG 最优升级方案（本机：~/.hermes/plans/cmg/optimal-upgrade_plan.md） — v1.5.0→v2.0.0 完整路线图（2026-06-14）
 - [Dashboard 开发日志](references/dashboard-development-log.md) — 12 轮迭代完整记录
 - [Dashboard 迭代教训 v2](references/dashboard-development-lessons-v2.md) — 虚拟滚动/批量/趋势图迭代教训
 - [Dashboard 迭代教训 v3](references/dashboard-development-lessons-v3.md) — sentinel 改名+自适应重构+execute_code 陷阱
 - [sentinel 代码审计清单](references/cmg-guard-audit-checklist.md) — 7 项代码检查框架 + 已修复陷阱记录（2026-06-14）
-- [CMG 组件改名流程](references/rename-procedure.md) — cmg-guard → sentinel 全链路改名步骤（2026-06-14）
-- [HTML 攻略编辑安全规则](references/html-guide-editing.md) — execute_code 文件污染、div 不平衡、高德 POI 格式（2026-06-15）
-- [HTML 文件编辑坑点](references/html-editing-pitfalls.md) — execute_code 污染文件 + 改前备份铁律（2026-06-15）
-- [HTML 拆分常见坑点](references/html-splitting-pitfalls.md) — 多余script标签/nav落入display:none/内容重复（2026-06-19）
-- [Token 安全处理](references/token-handling.md) — write_file→Python读文件，避免shell截断和对话泄漏（2026-06-19）
-- [GitHub Vercel 部署工作流](references/github-vercel-deploy.md) — Token管理 + 上传脚本 + Vercel自动部署（2026-06-19）
-- [CSS/JS 常见坑点](references/css-js-pitfalls.md) — CSS 重复规则互盖、Observer 竞态、!important 锁死、文件拆分路径（2026-06-19）
-- [API Key 沙箱拦截](references/api-key-sandbox-blocking.md) — 所有命令通道中 Key 模式被替换 *** 的行为和绕过方案（2026-06-26）
-- [中国 RMB 媒体生成 API](https://github.com/NousResearch/hermes-agent/blob/main/skills/hermes-agent/references/china-rmb-media-apis.md) — 国产生图/视频 API 全景对比（2026-06-25）
-- [工具 Config Schema 发现](references/tool-config-schema-discovery.md) — 写工具配置文件前如何验证实际 schema（npm `.d.ts` / Python 源码 / 已有配置）。禁止猜测 JSON 结构。（2026-06-25）
-- [Vercel 部署网络受限环境](references/vercel-deploy-network-issues.md) — TLS 握手失败的绕过方案 + GitHub API 上传（2026-06-19）
-- [动画安全HTML编辑](references/animation-safe-html-editing.md) — 绝不碰CSS/JS动画，transitionDelay > !important（2026-06-17）
+- CMG 组件改名流程（本地文档：rename-procedure.md） — cmg-guard → sentinel 全链路改名步骤（2026-06-14）
+- HTML 攻略编辑安全规则（本地文档：html-guide-editing.md） — execute_code 文件污染、div 不平衡、高德 POI 格式（2026-06-15）
+- HTML 文件编辑坑点（本地文档：html-editing-pitfalls.md） — execute_code 污染文件 + 改前备份铁律（2026-06-15）
+- HTML 拆分常见坑点（本地文档：html-splitting-pitfalls.md） — 多余script标签/nav落入display:none/内容重复（2026-06-19）
+- Token 安全处理（本地文档：token-handling.md） — write_file→Python读文件，避免shell截断和对话泄漏（2026-06-19）
+- GitHub Vercel 部署工作流（本地文档：github-vercel-deploy.md） — Token管理 + 上传脚本 + Vercel自动部署（2026-06-19）
+- CSS/JS 常见坑点（本地文档：css-js-pitfalls.md） — CSS 重复规则互盖、Observer 竞态、!important 锁死、文件拆分路径（2026-06-19）
+- API Key 沙箱拦截（本地文档：api-key-sandbox-blocking.md） — 所有命令通道中 Key 模式被替换 *** 的行为和绕过方案（2026-06-26）
+- 中国 RMB 媒体生成 API（hermes-agent 技能内的 china-rmb-media-apis.md） — 国产生图/视频 API 全景对比（2026-06-25）
+- 工具 Config Schema 发现（本地文档：tool-config-schema-discovery.md） — 写工具配置文件前如何验证实际 schema（npm `.d.ts` / Python 源码 / 已有配置）。禁止猜测 JSON 结构。（2026-06-25）
+- Vercel 部署网络受限环境（本地文档：vercel-deploy-network-issues.md） — TLS 握手失败的绕过方案 + GitHub API 上传（2026-06-19）
+- 动画安全HTML编辑（本地文档：animation-safe-html-editing.md） — 绝不碰CSS/JS动画，transitionDelay > !important（2026-06-17）
 
 ## 常见坑点 (维护本 Skill 时必读)
 
@@ -1734,7 +1734,7 @@ grep 'ssr' ~/.hermes/logs/agent.log | tail -5
 3. 改同一文件的所有操作必须在**一次** execute_code 中完成
 4. 改后 `grep` 验证
 
-详见 `references/html-editing-pitfalls.md`。
+详见本地文档 `html-editing-pitfalls.md`。
 
 **症状：** 在 CHANGELOG.md 中补加缺失的 v5.5.2 版本条目时，old_string 匹配到了 v5.5.2 的节头和下一个 v5.5.3 的节头——两个节头都被替换掉了。v5.5.3 的内容变成孤儿文本挂在 v5.5.4 下面。
 
@@ -1763,7 +1763,7 @@ grep 'ssr' ~/.hermes/logs/agent.log | tail -5
 - 交错方案：`transition-delay`（CSS）> 改 Observer > JS timer
 - 禁止 `setAttribute('style','...!important')`——永久锁死
 
-### 坑点 53: 批量 execute_code 美化 = 文件损坏的高概率路径（2026-06-15 实战）\n\n**症状：** 10 项美化改动（配色/光照/天空/水面/地形函数/材质/标签/动画/粒子/Yili覆盖层）在一次 `execute_code` 中执行。10次 `html.replace()` 链式操作，第4次替换的 old_string 不存在→静默失败→后续替换偏移→文件损坏。本会话因批量美化回滚 3 次，最长一次损失 1 小时工作。\n\n**根因：** `html.replace(a,b).replace(c,d)...` 链式操作中任一步 old_string 不匹配→该步跳过→后续步骤基于错误中间态→整个文件不可预测。\n\n**正确做法：**\n1. 复杂修改不打包成一次 execute_code——拆成独立 patch 调用\n2. 每步改完验证：grep 确认 new_string 存在\n3. 关键文件（CSS/JS）用 patch 工具而非 execute_code replace\n4. 10+ 处修改→分 3-4 批次，批次间打开文件验证\n5. 每次修改前 cp 备份\n\n### 坑点 54: 3D 噪音地形 ≠ 好看地图（2026-06-15 实战，3 次 3D 重写均被批"丑"）\n\n**症状：** 用 Three.js + 噪音函数生成新疆 3D 地形，迭代 3 版（调光照/加后处理/换材质/增 SEG），用户始终评价「丑」「锯齿」「不真实」。\n\n**根因：** 数学噪音模拟地形 = 三角面着色 = 天然锯齿。没有真实 DEM 高度数据 + 卫星纹理，3D 地形地图永远像低配游戏。Google Earth 能做到是因为有 TB 级卫星图 + 真实高程数据——这些不适合单文件 HTML。\n\n**正确做法：**\n- 地形地图 → Canvas 2D 逐像素着色（完全平滑，无三角面，无锯齿）\n- Canvas pixel-by-pixel 计算海拔→配色，叠加 0.5m 间距等高线\n- 0 外部依赖，渲染快，可缩放平移\n- 不要用 Three.js 做地形可视化——除非有真实 DEM + 卫星瓦片\n\n详见 `references/terrain-visualization-2d-vs-3d.md`
+### 坑点 53: 批量 execute_code 美化 = 文件损坏的高概率路径（2026-06-15 实战）\n\n**症状：** 10 项美化改动（配色/光照/天空/水面/地形函数/材质/标签/动画/粒子/Yili覆盖层）在一次 `execute_code` 中执行。10次 `html.replace()` 链式操作，第4次替换的 old_string 不存在→静默失败→后续替换偏移→文件损坏。本会话因批量美化回滚 3 次，最长一次损失 1 小时工作。\n\n**根因：** `html.replace(a,b).replace(c,d)...` 链式操作中任一步 old_string 不匹配→该步跳过→后续步骤基于错误中间态→整个文件不可预测。\n\n**正确做法：**\n1. 复杂修改不打包成一次 execute_code——拆成独立 patch 调用\n2. 每步改完验证：grep 确认 new_string 存在\n3. 关键文件（CSS/JS）用 patch 工具而非 execute_code replace\n4. 10+ 处修改→分 3-4 批次，批次间打开文件验证\n5. 每次修改前 cp 备份\n\n### 坑点 54: 3D 噪音地形 ≠ 好看地图（2026-06-15 实战，3 次 3D 重写均被批"丑"）\n\n**症状：** 用 Three.js + 噪音函数生成新疆 3D 地形，迭代 3 版（调光照/加后处理/换材质/增 SEG），用户始终评价「丑」「锯齿」「不真实」。\n\n**根因：** 数学噪音模拟地形 = 三角面着色 = 天然锯齿。没有真实 DEM 高度数据 + 卫星纹理，3D 地形地图永远像低配游戏。Google Earth 能做到是因为有 TB 级卫星图 + 真实高程数据——这些不适合单文件 HTML。\n\n**正确做法：**\n- 地形地图 → Canvas 2D 逐像素着色（完全平滑，无三角面，无锯齿）\n- Canvas pixel-by-pixel 计算海拔→配色，叠加 0.5m 间距等高线\n- 0 外部依赖，渲染快，可缩放平移\n- 不要用 Three.js 做地形可视化——除非有真实 DEM + 卫星瓦片\n\n详见本地文档 `terrain-visualization-2d-vs-3d.md`
 
 ### 坑点 55: setAttribute('style',...) + !important = 动画永久锁死（2026-06-17 实战）
 
@@ -1777,7 +1777,7 @@ grep 'ssr' ~/.hermes/logs/agent.log | tail -5
 3. 要交错 → 修改现有 IntersectionObserver 回调，加 `data-stagger` 序号 + `setTimeout(idx*80)`
 4. 不要另起炉灶在 DOMContentLoaded 里加交错——跟 Observer 必然竞速
 
-**恢复：** 从最早备份恢复完整 `<script>` 块 → 修改 Observer 回调本身实现交错。详见 `references/html-editing-pitfalls.md`。
+**恢复：** 从最早备份恢复完整 `<script>` 块 → 修改 Observer 回调本身实现交错。详见本地文档 `html-editing-pitfalls.md`。
 
 ### 坑点 52: Gaode SSR 页面 web_extract 始终不可用（2026-06-15 实战，12 次复现·已废除强制规则）
 
@@ -2007,7 +2007,7 @@ with open(path, "w") as f:
 5. 同步更新 plan 文件（master-status 组件列表、optimal-upgrade 架构图）
 6. 同步更新备份（`old.v1.4.0-stable` → `new.v1.4.0-stable`）
 
-**完整流程见 `hermes-agent-skill-authoring` 的 `references/plugin-rename-workflow.md`。**
+**完整流程见 `hermes-agent-skill-authoring` 技能内的 `plugin-rename-workflow.md`。**
 
 ### 坑点 47: Plugin 改名后必须重启 Hermes 才能生效（2026-06-14 实战）
 
@@ -2147,7 +2147,7 @@ for rule_key, rule_data in a_rules.items():
 - 正确方向：gap 专用拦截器（步骤完整性）、lazy 专用拦截器（工作流合规）、meta 专用拦截器（能力越界检测）
 - 归入 sentinel v2.0 架构升级，当前不阻塞 v1.4.0
 
-### 坑点 38: sentinel 输出修改钩子只兼容 CLI，Desktop/Web/API 会死锁（2026-06-04 实战）\n\n**症状：** Desktop 端发任何消息都被拦截，UI 显示 `[CMG 拦截]` 或空白。CLI 端完全正常。\n\n**根因：** CLI 有 AI 自我修正循环（拦截替换 → AI 看到 → 重试 → 干净输出），Desktop 没有（拦截消息直接渲染到 UI）。`transform_llm_output`、`pre_llm_call`、`post_llm_call` 三个输出修改钩子在非 CLI 平台均不兼容。\n\n**修复：** sentinel v1.4.0+ 内置平台检测，自动在非 CLI 平台跳过这三个钩子。哨兵仍运行但改为静默记录（写 errors.jsonl，不注入上下文）。只有 `pre_tool_call` 在所有平台生效。\n\n**相关规则修复：** `cmg-declaration-without-load` 关键词从 `[激活, CMG, ...]` 改为完整短语；`ban_no_cmg_abbreviation` 从 `[CMG]` 改为 `[CMG Dashboard, CMG v5., ...]`。\n\n详见 `references/desktop-compatibility.md` 和 `hermes-desktop` skill 的 `references/sentinel-cross-platform.md`。\n\n### 坑点 40: 修改 sentinel 前必须先更新 plan 文件（2026-06-04 用户纠正）
+### 坑点 38: sentinel 输出修改钩子只兼容 CLI，Desktop/Web/API 会死锁（2026-06-04 实战）\n\n**症状：** Desktop 端发任何消息都被拦截，UI 显示 `[CMG 拦截]` 或空白。CLI 端完全正常。\n\n**根因：** CLI 有 AI 自我修正循环（拦截替换 → AI 看到 → 重试 → 干净输出），Desktop 没有（拦截消息直接渲染到 UI）。`transform_llm_output`、`pre_llm_call`、`post_llm_call` 三个输出修改钩子在非 CLI 平台均不兼容。\n\n**修复：** sentinel v1.4.0+ 内置平台检测，自动在非 CLI 平台跳过这三个钩子。哨兵仍运行但改为静默记录（写 errors.jsonl，不注入上下文）。只有 `pre_tool_call` 在所有平台生效。\n\n**相关规则修复：** `cmg-declaration-without-load` 关键词从 `[激活, CMG, ...]` 改为完整短语；`ban_no_cmg_abbreviation` 从 `[CMG]` 改为 `[CMG Dashboard, CMG v5., ...]`。\n\n详见 `references/desktop-compatibility.md` 和 `hermes-desktop` 技能内的 `sentinel-cross-platform.md`。\n\n### 坑点 40: 修改 sentinel 前必须先更新 plan 文件（2026-06-04 用户纠正）
 
 **症状：** Desktop 试用暴露 sentinel 平台兼容问题后，AI 直接开始改 `__init__.py` 代码。用户制止：「你别急的改，不是有plan吗？查看然后更新一下再说」。
 

@@ -23,7 +23,7 @@ sentinel 已升级到 v1.3.0（17 hooks + pre_tool_call 阻断 + 自披露闭环
 ## 修复列表
 
 1. 全文件 sentinel 版本号同步：7 处 v1.2.0 → v1.3.0
-2. 引用文件重命名：`references/sentinel-v1.2.0-escalation.md` → `v1.3.0`
+2. 引用文件重命名：`sentinel-v1.2.0-escalation.md` → `sentinel-v1.3.0-escalation.md`
 3. CHANGELOG 补充 sentinel v1.3.0 变更详情
 
 ## 预防

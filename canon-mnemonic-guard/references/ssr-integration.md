@@ -290,7 +290,7 @@ launchctl load ~/Library/LaunchAgents/ai.hermes.gateway.plist
 ## 基准测试
 
 - **GREEN v1 (2026-06-04)**: 首次 SSR 安装后 5 场景测试，A 层关键词规则覆盖 → 5/5 通过
-- **GREEN v1 Force (2026-06-09)**: 修复 research-paper-writing A 层缺失 → 5/5 通过。详见 `references/2026-06-09-green-force-verification.md`（SSR precision-upgrade plan）
+- **GREEN v1 Force (2026-06-09)**: 修复 research-paper-writing A 层缺失 → 5/5 通过。详见 SSR precision-upgrade plan 归档内的 `2026-06-09-green-force-verification.md`
 - **GREEN v2 (2026-06-09)**: 新阈值 (0.35/0.40) + auto-gen 关闭 → 5/5 全通过（修正后——初版 3/5 是测试脚本用错 A 层规则格式导致的误报）。**非负优化：关键词规则兜底全部场景，embedding 弱不影响体验。** 可复现脚本：`references/ssr-green-benchmark-v2.py`。
 
 正确行为：

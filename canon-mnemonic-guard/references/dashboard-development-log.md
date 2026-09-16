@@ -32,6 +32,6 @@
 
 ## 踩坑
 
-1. **Python 三重引号内嵌 JS 的转义陷阱** — `toggleHook(\''+h+'\')` 被 Python 吃掉反斜杠。修复：用 `data-*` 属性。详见 `hermes-agent-skill-authoring/references/python-js-escaping-pitfall.md`
+1. **Python 三重引号内嵌 JS 的转义陷阱** — `toggleHook(\''+h+'\')` 被 Python 吃掉反斜杠。修复：用 `data-*` 属性。详见 hermes-agent-skill-authoring 技能内的 `python-js-escaping-pitfall.md`
 2. **POST 测试冲掉 config.yaml** — 测试时只传了 1 个 hook，覆盖了全部 17 个。修复：前端传完整对象。
 3. **`days_since` 计算失败** — naive vs timezone-aware datetime 减法抛异常。修复：`parse_days_since()` 多格式兼容 + 强制 UTC。
