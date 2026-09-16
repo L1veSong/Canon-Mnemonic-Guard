@@ -91,6 +91,15 @@ mnemonic_state.json 缺失不阻塞发布——Mnemonic 首次加载时自动初
 
 ---
 
+## 全量扫描（发布前必跑 · 2026-09-16 新增）
+
+- [ ] **① 版本残留**：全树 grep 上一版版本号（历史记录除外）；重点扫散落硬编码——注入消息、激活消息、README 标题、scripts/init.py
+- [ ] **② 死引用**：全树收集路径引用（`references/*.md`、相对链接）→ 逐一验证存在性；未发布 / 跨技能 / 本机路径的引用改为文本提及
+- [ ] **③ 隐私宽扫**：姓名 / 城市 / 公司 / 凭证模式全树扫描（本地 + 仓库双区 + 副本）
+- [ ] 仓库自带审计脚本的先跑（如 Idea Foundry 的 `references/audit.py`），须 PASS 再推
+
+---
+
 ## 打包
 
 - [ ] **🔴 桌面文件同步（v5.5.4 教训）：** 发布前对比已安装 vs 桌面包，逐文件验证行数一致。命令：`for f in canon-mnemonic-guard canon guard mnemonic; do echo "$f: installed=$(wc -l < ~/.hermes/skills/software-development/$f/SKILL.md) desktop=$(wc -l < ~/Desktop/CMG-Ecosystem-vX.X.X/$f/SKILL.md)"; done`。任一行数不一致 → 从已安装 cp 到桌面。
