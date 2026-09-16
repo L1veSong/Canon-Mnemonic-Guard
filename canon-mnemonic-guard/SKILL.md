@@ -391,8 +391,7 @@ Guard:   role: guard,     stage: pre_action     → 只执行拦截，不生产�
 | `!datasource` | 「数据源」/「数据源状态」 | 查看当前数据源状态和切换历史（v5.5.0 M3） |
 | `!scan-recommendations` | 「扫描推荐」/「检查推荐列表」 | 扫描推荐列表，检测已安装但未配置的工具（v5.2.0） |
 | `!dashboard` | 「Dashboard」/「仪表盘」 | 打开可视化 Dashboard（启动 localhost:8765 服务器）。详见 `references/dashboard-guide.md` |
-| `!review` | 「审查规则」/「规则审计」/「审核死规则」 | 审计 gap/lazy 规则能否升级为 ban + 识别死规则。体检用 `scripts/review-rules.py`（死规则/误报率/宽泛关键词检测）。详见 `references/phase1-rule-audit-guide.md` |
-| `!review` | 「审查规则」/「规则审计」/「审核死规则」 | 审计 gap/lazy 规则能否升级为 ban + 识别死规则。体检用 `scripts/review-rules.py`（死规则/误报率/宽泛关键词检测）。详见 `references/phase1-rule-audit-guide.md` |
+| `!review` | 「审查规则」/「规则审计」/「审核死规则」 | 审计 gap/lazy 规则能否升级为 ban + 识别死规则。体检用 `scripts/review-rules.py`（死规则/误报率/宽泛关键词检测）。详见 `references/phase1-rule-audit-guide.md`。注：hit_count 为上轮体检数据（手工维护，非实时）|
 
 ### 初始化命令
 
