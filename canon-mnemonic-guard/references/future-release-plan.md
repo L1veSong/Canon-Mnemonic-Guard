@@ -56,4 +56,4 @@
 内部: Canon (producer) → Mnemonic (memory) → Guard (guard)
 ```
 
-**文件位置：** `~/.hermes/skills/software-development/self-reflection-engine/`
+**文件位置：** `~/.hermes/skills/software-development/canon-mnemonic-guard/`

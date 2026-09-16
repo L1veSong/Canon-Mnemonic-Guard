@@ -1,10 +1,10 @@
 ---
 name: canon-mnemonic-guard
-description: 三省引擎 (CMG) — 取自「吾日三省吾身」。v5.6.0 +Dashboard v1.0.0 +Guard v4.8.3 +sentinel v1.4.0。三条核心线(Canon/Guard/Mnemonic) + 一条外观(CMG) + 两个插件(sentinel硬拦截/skill-autoload自启动)。对外 role:guard stage:pre_action。
-version: 5.6.0
+description: 三省引擎 (CMG) — 取自「吾日三省吾身」。v5.7.0 + Dashboard v1.0.1 + Guard v4.8.3 + sentinel v2.0.2。三条核心线(Canon/Guard/Mnemonic) + 一条外观(CMG) + 两个插件(sentinel硬拦截/skill-autoload自启动)。对外 role:guard stage:pre_action。
+version: 5.7.0
 role: guard
 dependencies: [canon, guard, mnemonic]
-_comment: "v5.6.0 +Dashboard v1.0.0。sentinel v1.4.0(平台检测+防幻觉)。Canon v2.7.2 + Guard v4.8.3 + Mnemonic v3.5.3。skill-autoload v1.0.1。三条核心线(Canon/Guard/Mnemonic) + 一条外观(CMG) + 两个插件(sentinel/skill-autoload)。"
+_comment: "v5.7.0 + Dashboard v1.0.1。sentinel v2.0.2(契约修复+工具闸门+平台自适应)。Canon v2.7.2 + Guard v4.8.3 + Mnemonic v3.5.3。skill-autoload v1.0.1。三条核心线(Canon/Guard/Mnemonic) + 一条外观(CMG) + 两个插件(sentinel/skill-autoload)。"
 min_hermes_version: any
 platforms: [linux, macos, windows]
 author: L1veSong
@@ -15,7 +15,7 @@ metadata:
     related_skills: [canon, guard, mnemonic, canon-mnemonic-guard-dashboard]
 ---
 
-# 三省引擎 (CMG) v5.6.0
+# 三省引擎 (CMG) v5.7.0
 
 > **对外身份**: guard (护栏) | **阶段**: pre_action | **中文名**: 三省引擎，取自「吾日三省吾身」
 
@@ -28,19 +28,26 @@ metadata:
   Mnemonic v3.5.3 (忆存线)  → 状态记忆。记录错误、提取模式、数据源管理。
 
 一条外观 (Skill 层)：
-  CMG v5.6.0               → 统一引擎。四包制分装 + Dashboard + 诊断/协调。
+  CMG v5.7.0               → 统一引擎。四包制分装 + Dashboard + 诊断/协调。
 
 两个插件 (Plugin 层)：
-  sentinel v1.4.0         → 硬拦截层。17个Hook，只覆盖 ban 规则（60条）。
+  sentinel v2.0.2         → 硬拦截层。17个Hook，只覆盖 ban 关键词（52 条 + 行为级 detector）。
   skill-autoload v1.0.1    → 自启动层。pre_llm_call 自动注入 CMG 加载指令。
 
 配套工具：
   Dashboard v1.0.0         → Web 可视化管理（localhost:8765）
 
 规则执行双层模型：
-  自觉层 → Guard 核心线 → AI 读 SKILL.md → 69 条全量（60ban+4gap+3lazy+2meta）
-  硬拦层 → sentinel 插件 → Hook 关键词扫描 → 60 条 ban 独享
-  缺口   → 9 条 gap/lazy/meta 只有自觉，没有硬拦
+  自觉层 → Guard 核心线 → AI 读 SKILL.md → 63 条全量（52ban+6gap+3lazy+2meta）
+  硬拦层 → sentinel 插件 → Hook 关键词扫描 → 52 条 ban 关键词 + 行为级 detector
+  缺口   → 6 条 gap/lazy/meta 由 sentinel v2.0.2 detector 软注入，仅 gap_ssr_report 待 ssr.report 配置
+
+> **行为分级执行模型（2026-09-07 澄清，未升版）：**
+> 规则 frontmatter `level` 字段分三级：
+> - `hard` → sentinel 硬拦（path_write 直接 block / 关键词扫描）
+> - `soft` → 注入提醒（pre_llm_call 附 correction 提示）
+> - `monitor` → 仅记录，不拦
+> 自觉层（AI 读本 SKILL.md 后遵守）承担的是**提示层**职能，不是拦截层——真正的强制拦截只由 sentinel 执行。文档中「五道闸」「拦得住」等表述按此认知理解：提示层负责降低犯错的概率，拦截层负责兜底。
 ```
 
 > v5.5.0: +微型调度器 | v5.4.2: M3清零 | v5.4.0: 四大增强 | v5.2.0: 六大功能
@@ -53,7 +60,8 @@ metadata:
 
 | 版本 | 变更 |
 |------|------|
-| v5.6.0 | +Dashboard v1.0.0 +反思提示 +guard v4.8.3精简版 +sentinel v1.4.0(活跃规则注入+URL检测+CoVe自检) +规则清理(gap12→4,lazy9→3,4空壳删除,10死规则归档→dead/) | 当前 |
+| v5.7.0 | +sentinel v2.0.x(契约适配+工具闸门落地+判定收窄) +Dashboard v1.0.1修复 +文档/引用同步 | 当前 |
+| v5.6.0 | +Dashboard v1.0.0 +反思提示 +guard v4.8.3精简版 +sentinel v1.4.0(活跃规则注入+URL检测+CoVe自检) +规则清理(gap12→4,lazy9→3,4空壳删除,10死规则归档→dead/) | |
 | v5.5.5 | +sentinel v1.3.2(17hooks+pre_tool_call读写感知堵SKILL.md未经authoring即改+post_llm_call任务完成证据校验+外部来源主张验证+自披露闭环) +四名冲突检测 | |
 | v5.5.3 | +双层哨兵(A层正则+B层LLM语义) +init.py自动配置config.yaml +一键卸载 --uninstall +意图识别meta规则 +坑点17:发布打包审计 | |
 | v5.5.2 | +默认固化阈值10→3 +修复init.py版本号滞后(跨两个大版本) |
@@ -144,7 +152,7 @@ tags: [分类标签]
 **注入格式:**
 ```
 ═══════════════════════════════════════
-三省引擎 v5.5.5 · 永久规则 (自动注入)
+三省引擎 v5.7.0 · 永久规则 (自动注入)
 ═══════════════════════════════════════
 [从 rules/_index.md 的表格 + 各规则的 frontmatter 摘要]
 ═══════════════════════════════════════
@@ -184,7 +192,7 @@ tags: [分类标签]
 
 ### 6. 输出激活状态
 
-**必须输出**: "三省引擎 v5.6.0 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒 / M 条元规则。典则·护栏·忆存。"
+**必须输出**: "三省引擎 v5.7.0 已激活。X 条禁止 / Y 条缺失 / Z 条偷懒 / M 条元规则。典则·护栏·忆存。"
 
 **激活后每次行动前**：注入反思提示到系统上下文：
 ```
@@ -383,8 +391,8 @@ Guard:   role: guard,     stage: pre_action     → 只执行拦截，不生产�
 | `!datasource` | 「数据源」/「数据源状态」 | 查看当前数据源状态和切换历史（v5.5.0 M3） |
 | `!scan-recommendations` | 「扫描推荐」/「检查推荐列表」 | 扫描推荐列表，检测已安装但未配置的工具（v5.2.0） |
 | `!dashboard` | 「Dashboard」/「仪表盘」 | 打开可视化 Dashboard（启动 localhost:8765 服务器）。详见 `references/dashboard-guide.md` |
-| `!review` | 「审查规则」/「规则审计」/「审核死规则」 | 审计 gap/lazy 规则能否升级为 ban + 识别死规则。详见 `references/phase1-rule-audit-guide.md`（Phase 1 审计指南） |
-| `!review` | 「审查规则」/「规则审计」/「审核死规则」 | 审计 gap/lazy 规则能否升级为 ban + 识别死规则。详见 `references/phase1-rule-audit-guide.md`（Phase 1 审计指南） |
+| `!review` | 「审查规则」/「规则审计」/「审核死规则」 | 审计 gap/lazy 规则能否升级为 ban + 识别死规则。体检用 `scripts/review-rules.py`（死规则/误报率/宽泛关键词检测）。详见 `references/phase1-rule-audit-guide.md` |
+| `!review` | 「审查规则」/「规则审计」/「审核死规则」 | 审计 gap/lazy 规则能否升级为 ban + 识别死规则。体检用 `scripts/review-rules.py`（死规则/误报率/宽泛关键词检测）。详见 `references/phase1-rule-audit-guide.md` |
 
 ### 初始化命令
 
@@ -715,22 +723,22 @@ v1.0.0 缺乏跨会话状态：
 │       三省引擎 · 协调日志       │
 ╰─────────────────────────────────╯
 
-  📋 典则线 Canon (v2.5.0)
+  📋 典则线 Canon (v2.7.2)
      规则: 10条 (ban:6 / gap:2 / lazy:2)
      上次固化: 2026-05-20 15:30
      上次扫盘: 2026-05-22 08:00 (0天前)
      错误记录: 23条总计
 
-  🛡️ 护栏线 Guard (v4.5.0)
+  🛡️ 护栏线 Guard (v4.8.3)
      模式: full (规则≤20)
      拦截总计: 15次
      └─ Ban: 8 / Fabrication: 2 / StepCompleteness: 3 / SkillLoad: 1 / Clarify: 1
 
-  🧠 忆存线 Mnemonic (v3.3.0)
+  🧠 忆存线 Mnemonic (v3.5.3)
      数据源: guard_intercept (正常)
      识别模式: 3个 / 草稿队列: 1条待确认
 
-  ── 三省引擎 v5.5.5
+  ── 三省引擎 v5.7.0
 ```
 
 **降级：** 任一线数据缺失 → 标注 `⚠️ 缺失`，不阻塞其他线路输出。
@@ -835,13 +843,13 @@ v1.0.0 缺乏跨会话状态：
      Canon 错误记录: 23条 (最后写入 2026-05-21)
 
   📦 子包版本    ··········  ✅ 一致
-     canon v2.7.2 / guard v4.8.2 / mnemonic v3.5.3
+     canon v2.7.2 / guard v4.8.3 / mnemonic v3.5.3
 
   🔤 四名冲突    ··········  ✅ canon/guard/mnemonic/CMG 无冲突
 
   🟢 总体状态：健康
      建议: 规则 rule_007 60天未触发，可在下次固化工单中复核。
-  ── 三省引擎 v5.5.5
+  ── 三省引擎 v5.7.0
 ```
 
 ### 诊断级别
@@ -855,8 +863,14 @@ v1.0.0 缺乏跨会话状态：
 
 ---
 
+- [SSR A 层静默失败诊断](references/ssr-a-layer-silent-failure-diagnostic.md) — 2026-07-03：zero A-layer hits 根因链(embedding API key 失效→_embed() 返回 None→整个分支跳过→坠落 B 层)+_similarity_floor 日志误导信号+curl 验证步骤
+- [SSR Embedding Floor 校准方法论](references/ssr-embedding-floor-calibration.md) — 2026-07-03：噪声基准→分位数→候选 floor 对比→model_scores.json 校准，含 Qwen3-8B 实测数据+截断 key 误判坑点(embedding API key 失效→_embed() 返回 None→整个分支跳过→坠落 B 层)+_similarity_floor 日志误导信号+curl 验证步骤
+- [SSR B 层调试全记录](references/ssr-b-layer-debugging.md) — 2026-07-05：1次会话7轮修复，B 层 401→超时→JSON→key→签名全链路。核心教训：修 bug 前先确认 bug 在执行路径上。含最小可工作配置（本地/云API/仅A层）。 — 2026-07-03：噪声基准→分位数→候选 floor 对比→model_scores.json 校准，含 Qwen3-8B 实测数据+截断 key 误判坑点(embedding API key 失效→_embed() 返回 None→整个分支跳过→坠落 B 层)+_similarity_floor 日志误导信号+curl 验证步骤
+- [SSR Benchmark 解读指南](references/ssr-benchmark-interpretation.md) — 2026-07-04：三步验证 #3 根因定位。`--mode embedding` 裸层物理极限 11/20，非 bug。禁止据此修改生产 merge 逻辑。
+- [web_extract 判断规则](references/web-extract-judgment-rules.md) — 2026-06-28 用户纠正：不强制先 web_extract，自行判断站点类型选择 browser 或 web_extract
 - [SSR 集成](references/ssr-integration.md) — 智配路由插件与 CMG 的协作关系、互补设计
 - [SSR GREEN 基准 v2](references/ssr-green-benchmark-v2.md) — bge-m3 中文领域术语盲区验证（2026-06-09）
+- [SSR v2.1.0 全量审计](references/ssr-v2.1.0-audit-20260623.md) — 2026-06-23 全文件 grep 审计，CHANGELOG 声称 vs 代码实际逐条验证
 - [SSR 基准测试脚本](scripts/ssr-green-benchmark.py) — 独立运行 embedding 匹配精度测试
 - [init.py 名冲突检测设计](references/init-name-conflict-detection.md) — CMG 四名保护 + 双触发点检测 + 三选一解决
 - [联动待测清单](references/integration-test-checklist.md) — ralph-loop/VBC/diagnose 验证条件和状态
@@ -879,6 +893,17 @@ v1.0.0 缺乏跨会话状态：
 - [Dashboard 迭代教训 v3](references/dashboard-development-lessons-v3.md) — sentinel 改名+自适应重构+execute_code 陷阱
 - [sentinel 代码审计清单](references/cmg-guard-audit-checklist.md) — 7 项代码检查框架 + 已修复陷阱记录（2026-06-14）
 - [CMG 组件改名流程](references/rename-procedure.md) — cmg-guard → sentinel 全链路改名步骤（2026-06-14）
+- [HTML 攻略编辑安全规则](references/html-guide-editing.md) — execute_code 文件污染、div 不平衡、高德 POI 格式（2026-06-15）
+- [HTML 文件编辑坑点](references/html-editing-pitfalls.md) — execute_code 污染文件 + 改前备份铁律（2026-06-15）
+- [HTML 拆分常见坑点](references/html-splitting-pitfalls.md) — 多余script标签/nav落入display:none/内容重复（2026-06-19）
+- [Token 安全处理](references/token-handling.md) — write_file→Python读文件，避免shell截断和对话泄漏（2026-06-19）
+- [GitHub Vercel 部署工作流](references/github-vercel-deploy.md) — Token管理 + 上传脚本 + Vercel自动部署（2026-06-19）
+- [CSS/JS 常见坑点](references/css-js-pitfalls.md) — CSS 重复规则互盖、Observer 竞态、!important 锁死、文件拆分路径（2026-06-19）
+- [API Key 沙箱拦截](references/api-key-sandbox-blocking.md) — 所有命令通道中 Key 模式被替换 *** 的行为和绕过方案（2026-06-26）
+- [中国 RMB 媒体生成 API](https://github.com/NousResearch/hermes-agent/blob/main/skills/hermes-agent/references/china-rmb-media-apis.md) — 国产生图/视频 API 全景对比（2026-06-25）
+- [工具 Config Schema 发现](references/tool-config-schema-discovery.md) — 写工具配置文件前如何验证实际 schema（npm `.d.ts` / Python 源码 / 已有配置）。禁止猜测 JSON 结构。（2026-06-25）
+- [Vercel 部署网络受限环境](references/vercel-deploy-network-issues.md) — TLS 握手失败的绕过方案 + GitHub API 上传（2026-06-19）
+- [动画安全HTML编辑](references/animation-safe-html-editing.md) — 绝不碰CSS/JS动画，transitionDelay > !important（2026-06-17）
 
 ## 常见坑点 (维护本 Skill 时必读)
 
@@ -1523,6 +1548,107 @@ CMG SKILL.md 设计的触发条件是「意图识别，非关键词匹配」，�
 2. 双层加固：CMG hard 规则约束思考 + sentinel 输出层兜底拦截
 3. 长期方向：pre_llm_call 自动预拉取素材，让模型推理前就知道「这个链接读不到」
 
+### 坑点 58: 配置文件 schema 不可凭经验推断（2026-06-25 Reasonix config.json 实战）
+
+**症状：** 用户要求写 `~/.reasonix/config.json`，AI 凭经验编造了 JSON 结构（mcpServers 嵌套格式），字段名和结构全错。用户："这是reasonix的路径，你不要乱写啊"。
+
+**根因：** AI 看到 "config.json" 就按通用 JSON config 格式脑补了结构。实际 Reasonix 有自己的 `ReasonixConfig` interface，字段名、嵌套层次、类型都不一样。
+
+**正确做法：**
+1. 写任何配置文件前，先查该工具的实际 schema：
+   - npm 包 → `grep 'interface.*Config' node_modules/<pkg>/dist/index.d.ts`
+   - pip 包 → `pip3 show -f <pkg>` 找源码
+   - 官方工具 → 文档 / 源码 / `--help` / `setup` 向导
+2. 禁止凭经验推断 config.json/TOML/YAML 的内部结构
+3. 找不到 schema → 问用户或用该工具的 setup 向导
+
+### 坑点 59: web_extract 前置导致 80% 浪费——JS 渲染站点预判（2026-06-25 Keycloak 页面实战）
+
+**症状：** CMG 旧规则「外部来源必须先 web_extract」对 JS 渲染网站 80% 返回空壳，每次浪费一步再开 browser。用户投诉后已废除强制 web_extract。
+
+**根因：** web_extract 是纯 HTTP 请求，SPA/React/Vue 站点返回空 `<div id="root">`。browser 能执行 JS，适合这类站点。
+
+**新规则（用户指定）：AI 自行判断用 web_extract 还是 browser，不强制先 web_extract。**
+- `raw.githubusercontent.com`、`.md`、`.json`、`.txt`、API 裸接口 → web_extract（快、省 token）
+- 官网、文档站、博客（大概率 JS 渲染）→ 直接 browser
+- 不认识的域名 → 根据域名类型判断，不对有明显 JS 渲染特征的站点盲试 web_extract
+- 用户报错/问进度/配置问题 → 不需要验证，直接回答
+
+### 坑点 58: 写配置前必须查 schema，禁止凭经验编结构（2026-06-25 Reasonix 实战）
+
+**症状：** 用户让写 Reasonix config.json，AI 凭想象编了 `{lang, apiKey, theme, mcpServers:{...{command,args}}}` 的 JSON 结构。用户纠正：「这是reasonix的路径，你不要乱写啊」。实际 Reasonix 的 `ReasonixConfig` 接口定义在 npm 包的 `index.d.ts` 中，schema 完全不同。
+
+**根因：** 看到"config.json"就以为随便写——没查实际类型定义。每种工具的 config schema 千差万别。
+
+**正确做法：**
+1. 写任何配置文件前 → 先定位源码中的类型定义
+2. Node.js 项目 → `grep` 包里的 `index.d.ts`，找 `interface XxxConfig`
+3. Python 项目 → `grep` 源码中的 `dataclass`/`TypedDict`/`__init__` 参数
+4. 找不到源码 → 查官方文档的 config reference
+5. 绝对不凭"一般 config.json 都这样"编结构
+
+**教训：** 不同工具 schema 不互通。`{apiKey, lang, theme}` 在 Reasonix 是对的，但 `mcpServers` 的结构完全不同。坑点 57（shell 引号）也是同类问题——都是"凭感觉写，不查文档"。
+
+**⚠️ `hermes config set` 零验证（2026-06-28 实战）：** `hermes config set voice.auto_enable true` 返回 `✓ Set voice.auto_enable = True`，但 `voice.auto_enable` 不是 Hermes 的真实配置项——是我当场编的"未文档化配置实验"。`hermes config set` 不验证 key 是否存在、是否被 Hermes 读取，它**盲目写入任何 key**。CLI 成功 ≠ 配置生效。判断标准：只有官方文档/config reference 里列的 key 才是真配置，`hermes config set` 的 "✓" 不作数。
+
+### 坑点 57: Shell 引号嵌套 + API Key 沙箱拦截（2026-06-25 心理物理检测 API 实战）
+
+**症状：** curl 命令中含 API Key 时，终端单引号/双引号嵌套频繁失败（`unexpected EOF`、`unmatched '`）。改用 execute_code 后，Hermes 沙箱检测到 Key 模式自动替换为 `***`，破坏 Python f-string 语法（`SyntaxError: unterminated f-string literal`）。两种路径各失败 6+ 次。
+
+**根因：**
+1. 终端 shell 在单引号内无法嵌套单引号，双引号内 `$` 被解释为变量
+2. Hermes 沙箱有 Key 模式检测——任何看起来像 API Key 的字符串都会被替换
+3. execute_code 内用 f-string 拼接 Key 时，沙箱替换后引号不匹配
+
+**正确做法：**
+```python
+# ✅ execute_code 内用 subprocess.run()，Key 从环境变量读
+import subprocess, os, json
+
+key = os.environ.get("PSYCHO_API_KEY", "your-key-here")
+r = subprocess.run(["curl", "-s", "-X", "POST", url,
+    "-H", f"X-API-Key: *** "-d", json.dumps(body)],
+    capture_output=True, text=True)
+
+# ❌ 不要在 terminal() 里直接写含 Key 的 curl 命令
+# ❌ 不要在 execute_code 的 f-string 里嵌 Key（沙箱会替换 *** 破坏语法）
+```
+
+**优先级：** 遇到需要传 Key 的命令时，首选 execute_code + subprocess。terminal() 仅用于不含 Key 的简单命令。
+
+**症状：** SSR v2.0→v2.1 升级中，11 文件版本号全量同步、CHANGELOG 写了完整条目（Gate prompt配置化+元对话检测+自循环学习）、README 版本历史追加——全部就绪。但 `__init__.py` 中三项功能**一行都没写**。用户问「2.1的功能更新了吗？」才发现 2/5 实际落地。
+
+**根因：** 发布流程是写 CHANGELOG → 同步版本号 → 功能代码。这次把前三步当成了全部——版本号和 CHANGELOG 是门面，功能代码是实体。门面写完≠发布完成。
+
+**正确做法：**
+```bash
+# 发布前逐条验证 CHANGELOG 声称的功能在代码中实际存在
+# 以 SSR v2.1 为例：
+grep 'gate_prompt\|gate prompt' __init__.py     # Gate prompt 配置化？
+grep 'meta_detection\|meta detection' __init__.py  # 元对话检测？
+grep 'boost_skill\|self.loop\|自循环' __init__.py   # 自循环？
+# 三条全空 → 不能发布。先补代码再写 CHANGELOG。
+
+# 正确顺序：代码 → 验证 → CHANGELOG → 版本号 → 打包
+```
+
+**教训：** 发布检查清单必须增加「CHANGELOG 声称 vs 代码实际」逐条对照。已归入 CMG release-checklist。关联：坑点 17（发布打包审计）、坑点 26（验证先于结论）。
+
+**症状：** rtk-rewrite 在 config.yaml enabled 列表中、pip3 显示已安装、rtk 二进制可用——
+但 agent.log 中零条 `[rtk]` 日志。用户问"rtk是不是没用？"——确实没用，9 天零次生效。
+插件 `register()` 从未被 Hermes 调用。
+
+**诊断四步（详见 `references/plugin-troubleshooting.md`）：**
+1. 确认配置声明 → config.yaml enabled 列表
+2. 确认代码存在 → pip show / ls plugins/
+3. **确认注册日志** → `grep '[plugin-tag]' agent.log`（最关键）
+4. 确认实际效果 → 统计拦截/改写次数
+
+**判定：** 零日志 = register() 从未被调用 = 插件是僵尸配置。移出 config.yaml 比留着占位好。
+
+**对比：** 原生路径插件（sentinel/skill-autoload/ssr）日志格式为 `INFO hermes_plugins.X: [X] registered`。
+pip site-packages 的 entry point 插件可能不被 Hermes 扫描。
+
 ### 坑点 31: 配套工具列了但从不用——AI不会主动提议（2026-05-30 · 2026-06-04 二次复盘）
 
 **症状：** ralph-loop 在 CMG 推荐列表里挂了数个版本，明确写着「Guard 拦截跳步骤→自动触发闭环验证」。但今天打包漏组件时 AI 从头到尾没提一句「用 ralph-loop 管着」。事后用户问起才想起来。
@@ -1542,7 +1668,7 @@ CMG SKILL.md 设计的触发条件是「意图识别，非关键词匹配」，�
 
 **解决方案（2026-06-04 落地）：SSR 插件**
 
-已开发 **智配路由 (SSR — Smart Skill Router Plugin)** v0.1.0 作为独立 pre_llm_call 插件填补此缺口：
+已开发 **智配路由 (SSR — Smart Skill Router Plugin)** v2.0.0 作为独立 pre_llm_call 插件填补此缺口：
 
 - A 层（关键词精确匹配，零延迟）+ B 层（Ollama qwen2.5:3b 语义匹配，兜底）
 - B 层连续命中 3 次自动升级到 A 层
@@ -1553,20 +1679,14 @@ CMG SKILL.md 设计的触发条件是「意图识别，非关键词匹配」，�
 
 SSR 与 CMG 的 sentinel task_recommendations 关系：互补不替代。sentinel 继续负责 CMG 配套工具推荐（5 种模式），SSR 负责全量 skill 库推荐（200+ skill）。详见 `references/ssr-integration.md`。
 
-**待解决方向（SSR v0.2+）：**
+**待解决方向（SSR v2.1+）：**
 1. B 层匹配质量验证（20 条真实请求测命中率）
 2. A 层关键词表从社区/用户反馈中持续优化
 3. 未来方向：skill 注册表 + 向量/关键词匹配 + 自动 `skill_view()`——截图里「得闲饮茶」说的索引化方案已部分实现
 
 **正确做法：** 不依赖 AI 自觉翻推荐列表。SSR 插件层在任务开始时主动亮牌。sentinel 的 task_recommendations 仍需保留——覆盖 CMG 自身需要的关键场景作为 A 层快速路径。
 
-**SSR 回声规则（2026-06-04 追加）：** SSR 推荐命中 ≠ AI 展示了。SSR 输出在 agent.log 里，不在对话中——用户看不到。AI 必须在收到 SSR 推荐后的**第一条回复中**展示推荐结果，格式：
-
-```
-[SSR] 检测到任务需求，建议加载: brainstorming (DISCOVER) | ui-ux-pro-max (BUILD) | popular-web-designs (BUILD)
-```
-
-然后再进入 clarify/action。实战案例：用户说"设计登录页面"，SSR B 层命中 3 个 skill，但 AI 第一条消息直接是 clarify("这个登录页是给什么项目用的？")，用户没看到 SSR 结果，误以为 SSR 没工作。
+**SSR 回声问题已移交 SSR 插件自行处理（2026-06-24）。** 此问题不应由 CMG 管理——SSR 的信使责任和 CMG 的守门责任完全解耦。详见 SSR 插件的 post_llm_call 兜底机制。
 
 **SSR 存活验证（v0.1.0 新增，2026-06-04 实战驱动）：**
 
@@ -1604,7 +1724,17 @@ grep 'ssr' ~/.hermes/logs/agent.log | tail -5
 
 **教训：** 需要分析因果关系时不能只看表面。用户观察到的"安装 brainstorming 后才出现选择弹窗"是线索——顺着这个线索找到 Guard 的 ClarifyInterceptor 规格才算挖到根。详见 `references/guard-spec.md` 第五层拦截器。
 
-### 坑点 49: CHANGELOG 节插入可能级联删除相邻节头（2026-06-15 实战）
+### 坑点 51: HTML 编辑三件套——备份+open()+grep（2026-06-15 实战）
+
+**症状：** 用 execute_code 修改 HTML 美食栏目，第一次 write_file 把 `read_file()` 返回的行号前缀（`374|374|`）写入文件，内容被截断至不到一半。第二次 execute_code 互踩导致更严重的损坏。用户反复提醒「改HTML先cp备份」仍遗忘。
+
+**正确做法：**
+1. 改前必须 `cp file file.bak.$(date +%m%d%H%M)`
+2. 用 `open()` 读文件，**禁止**用 `read_file()`——后者返回行号前缀
+3. 改同一文件的所有操作必须在**一次** execute_code 中完成
+4. 改后 `grep` 验证
+
+详见 `references/html-editing-pitfalls.md`。
 
 **症状：** 在 CHANGELOG.md 中补加缺失的 v5.5.2 版本条目时，old_string 匹配到了 v5.5.2 的节头和下一个 v5.5.3 的节头——两个节头都被替换掉了。v5.5.3 的内容变成孤儿文本挂在 v5.5.4 下面。
 
@@ -1618,7 +1748,89 @@ grep 'ssr' ~/.hermes/logs/agent.log | tail -5
 
 **检查清单：** 插入后逐条核对：新节头存在 ✓、相邻节头完整 ✓、版本倒序正确 ✓。
 
-### 坑点 50: 配套表是 Dashboard 的唯一数据源——必须全英文（2026-06-15 实战）
+### 坑点 55: CSS 错误是无声的（2026-06-19 · 2h动画调试）
+
+**症状：** D10/D11 无法接在 D9 后面。换了 5 套方案才定位：不是 JS 问题，是 CSS + DOM 问题。
+
+**三个真因：**
+1. `#page-index` 容器 329 open / 328 close，D10/D11 不在容器内，选择器漏掉
+2. `.glass-card{transition:...}` 声明两次，第二条覆盖第一条，`border-color` 丢失
+3. 重复 `.glass-card::before`、空 `.glass-card{}`——死代码干扰
+
+**正确做法：**
+- 改动画前先 `grep` 审计 CSS 重复选择器/伪元素/空规则
+- 选择器用 `.glass-card` 不依赖 `#page-index`
+- 交错方案：`transition-delay`（CSS）> 改 Observer > JS timer
+- 禁止 `setAttribute('style','...!important')`——永久锁死
+
+### 坑点 53: 批量 execute_code 美化 = 文件损坏的高概率路径（2026-06-15 实战）\n\n**症状：** 10 项美化改动（配色/光照/天空/水面/地形函数/材质/标签/动画/粒子/Yili覆盖层）在一次 `execute_code` 中执行。10次 `html.replace()` 链式操作，第4次替换的 old_string 不存在→静默失败→后续替换偏移→文件损坏。本会话因批量美化回滚 3 次，最长一次损失 1 小时工作。\n\n**根因：** `html.replace(a,b).replace(c,d)...` 链式操作中任一步 old_string 不匹配→该步跳过→后续步骤基于错误中间态→整个文件不可预测。\n\n**正确做法：**\n1. 复杂修改不打包成一次 execute_code——拆成独立 patch 调用\n2. 每步改完验证：grep 确认 new_string 存在\n3. 关键文件（CSS/JS）用 patch 工具而非 execute_code replace\n4. 10+ 处修改→分 3-4 批次，批次间打开文件验证\n5. 每次修改前 cp 备份\n\n### 坑点 54: 3D 噪音地形 ≠ 好看地图（2026-06-15 实战，3 次 3D 重写均被批"丑"）\n\n**症状：** 用 Three.js + 噪音函数生成新疆 3D 地形，迭代 3 版（调光照/加后处理/换材质/增 SEG），用户始终评价「丑」「锯齿」「不真实」。\n\n**根因：** 数学噪音模拟地形 = 三角面着色 = 天然锯齿。没有真实 DEM 高度数据 + 卫星纹理，3D 地形地图永远像低配游戏。Google Earth 能做到是因为有 TB 级卫星图 + 真实高程数据——这些不适合单文件 HTML。\n\n**正确做法：**\n- 地形地图 → Canvas 2D 逐像素着色（完全平滑，无三角面，无锯齿）\n- Canvas pixel-by-pixel 计算海拔→配色，叠加 0.5m 间距等高线\n- 0 外部依赖，渲染快，可缩放平移\n- 不要用 Three.js 做地形可视化——除非有真实 DEM + 卫星瓦片\n\n详见 `references/terrain-visualization-2d-vs-3d.md`
+
+### 坑点 55: setAttribute('style',...) + !important = 动画永久锁死（2026-06-17 实战）
+
+**症状：** 为首页卡片加交错动画，用 `c.setAttribute('style', 'opacity:0!important;...')` 强制隐藏→定时显示。交错完成后所有卡片带 `opacity:1!important` 行内样式，后续切换标签页、hover 过渡、重新加载——全部动画失效。美食栏目动画也连带崩坏。
+
+**根因：** `setAttribute('style',...)` 替换整条行内样式，`!important` 让它无法被任何 CSS 类或后续 JS 覆盖。交错结束后卡片永久锁定，跟"写死"没区别。
+
+**正确做法：**
+1. 永远不用 `setAttribute('style', ...)` + `!important` 做动画
+2. 用 `c.style.opacity = '0'` 逐属性设，不写 `!important`
+3. 要交错 → 修改现有 IntersectionObserver 回调，加 `data-stagger` 序号 + `setTimeout(idx*80)`
+4. 不要另起炉灶在 DOMContentLoaded 里加交错——跟 Observer 必然竞速
+
+**恢复：** 从最早备份恢复完整 `<script>` 块 → 修改 Observer 回调本身实现交错。详见 `references/html-editing-pitfalls.md`。
+
+### 坑点 52: Gaode SSR 页面 web_extract 始终不可用（2026-06-15 实战，12 次复现·已废除强制规则）
+
+**症状：** CMG 旧规则「外部来源主张必须先 web_extract 验证」导致每次处理高德地图 POI 链接时反复 web_extract，12 次全失败。
+
+**根因：** 高德 SSR 页面是 JS 渲染的 SPA，web_extract 拿不到内容。已废除强制 web_extract（见坑点 59），AI 自行判断。
+
+**正确做法：**
+1. 用户已在高德 App 亲自验证过的内容 → 直接信任，不需要验证
+2. 用户提供的 POI ID（如 `B0XXXXXXXX`）→ 直接使用
+3. JS 渲染的 SPA（高德、大众点评、抖音等）→ 直接 browser，不用 web_extract
+4. 判断标准：需要看实际页面内容时用 browser，只需要结构化数据用 web_extract
+
+**高德 POI 链接格式：**
+- 搜索链接：`https://www.amap.com/ssr/search?keyword=xxx`
+- 精确链接：`https://www.amap.com/ssr/place/{POI_ID}`
+
+**症状：** execute_code 内调 `read_file()` 读取 HTML → 修改 → `write_file()` 写回。文件被写入 `374|374|<div...` 格式（行号前缀），且内容截断。第二次尝试同样结果。靠用户桌面备份恢复。
+
+**根因：** `read_file` 返回格式为 `LINE_NUM|CONTENT`。传给 `write_file` 后行号前缀被写入文件实体。execute_code 的沙箱不隔离 read_file 的输出格式——它原样拿到带行号的内容。
+
+**正确做法：**
+1. execute_code 内读文件一律用 Python `open(path).read()`，禁用 `read_file`
+2. 改前必 `cp backup`（终端命令，在 execute_code 之前执行）
+3. 优先用 `patch` 工具做 surgical edit，避免整文件读写
+4. 如果必须 execute_code 处理 HTML，验证：改后 `grep` 确认无行号前缀残留
+
+**本会话复现记录：**
+- 第 1 次：execute_code 写回带行号前缀 → 文件从 108K 缩至 48K → 食物栏目大半丢失
+- 第 2 次：恢复后再次 execute_code → 同样污染 → 再次丢失
+- 最终靠用户提供桌面备份 `新疆伊犁11日慢游(5).html` 恢复
+
+### 坑点 51: read_file + execute_code 写入 = 文件损坏（2026-06-15 实战·多次）\\n\\n**症状：** 用 `read_file` 读取 HTML → `execute_code` 写入 → 文件被截断、行号前缀混入内容、数据丢失。\\n\\n**根因：** `read_file` 返回 `LINE_NUM|CONTENT` 格式。把这个输出传给 `execute_code` 的 `write_file` → 行号变成文件内容的一部分。同时 HTML 长行被分页截断 → 内容丢失。\\n\\n**正确做法：**\\n1. 改 HTML/大数据文件 → `execute_code` 内用 `open()` 直接读写，不用 `read_file`\\n2. 简单替换优先用 `patch`\\n3. **改前必须备份** — `cp file file.bak.$(date +%m%d%H%M)`\\n4. 改后立即 `grep` 验证关键内容存在 + 文件末尾完整（`tail -2`）\\n\\n**本次实战代价：** 食物栏目 68 家店铺被截断只剩 2 家，从备份恢复耗时 30+ 分钟。\\n\\n### 坑点 51: execute_code 中用 read_file() 读取 HTML → 写入时行号前缀污染文件（2026-06-15 实战）
+
+**症状：** 用 execute_code 脚本调用 `from hermes_tools import read_file` 读取 HTML 文件，`result["content"]` 包含 `LINE_NUM|CONTENT` 格式的行号前缀（如 `374|374|<div...`）。将 content 处理后再 `write_file` 写回 → 行号前缀永久写入文件，HTML 被污染。
+
+更致命的是：read_file 对超大行（HTML 中 minified 的美食栏目单行 50KB+）会自动截断 `[...truncated]`，导致内容丢失。
+
+**根因：** `read_file` 是给 LLM 阅读用的工具，输出格式始终带行号。禁止在 execute_code 中用它作为文件读写管道——它设计的目的是展示，不是传递原始数据。
+
+**正确做法：**
+```python
+# ✅ 用 Python 原生读写
+with open(path, "r") as f:
+    html = f.read()
+# ... 处理 ...
+with open(path, "w") as f:
+    f.write(html)
+```
+
+**实战教训：** 本次会话第一次 execute_code 用 read_file 读 HTML → 写入后文件被污染（行号+截断），食物栏目 68 家全部丢失，只能从备份恢复。后续全部改用 `open()` 原始读写后无此问题。
+
+**关联：** 坑点 48（execute_code 多次调用互踩）、坑点 47（改 server.py 前必须备份）。
 
 **症状：** Dashboard 英文模式下，配套技能列表仍显示大片中文（「智配路由」「压缩终端输出」「自动匹配用户意图到 200+ skill」）。用户质问：英文切换为何有残留中文？
 
@@ -1649,6 +1861,19 @@ grep 'ssr' ~/.hermes/logs/agent.log | tail -5
 3. 不通过预检 → 先帮用户安装/配置，再继续讨论功能
 4. vault 文件 ≠ 应用安装——`ls` 验证是唯一可靠方式
 
+### 坑点 51: execute_code 内用 read_file 读取 HTML 写入会污染行号前缀（2026-06-15 实战）
+
+**症状：** 在 execute_code 中用 `read_file()` 读取 HTML 文件，修改后 `write_file()` 写回。文件被 `373|373|`、`374|374|` 等行号前缀污染，且内容被截断（108K→48K）。read_file 返回格式是 `LINE_NUM|CONTENT`，write_file 原样写回→行号 bake 进文件。
+
+**根因：** read_file 是给 LLM 阅读用的（带行号前缀），不是给程序处理的。`open().read()` 才是纯文件内容。
+
+**正确做法：**
+1. execute_code 内读写文件一律用 `open(path).read()` / `open(path, 'w').write()`，禁用 read_file/write_file
+2. 如果必须用 read_file 看内容（排查问题）→ 看完就扔，绝不用返回值做修改后写回
+3. 改前必备份：`cp file file.bak.$(date +%m%d%H%M)`
+
+**本会话损失：** 食物栏目 68 家条目被截断至 2 家，靠用户提供的桌面备份恢复。5 个旧备份 + corrupted 文件均无完整版。
+
 ### 坑点 48: execute_code 沙箱隔离——多次调用互踩致文件清空（2026-06-14 实战）
 
 **症状：** 用 3 次 `execute_code` 先后修改 `server.py`，第三次调用时文件变成 0 字节。所有备份都是 5 天前的旧版本。
@@ -1660,6 +1885,7 @@ grep 'ssr' ~/.hermes/logs/agent.log | tail -5
 2. 必须分步时，每次 `execute_code` 开头用 `with open(path) as f: c = f.read()` 重新读取当前磁盘状态
 3. **改前必备份** — `cp file file.bak.$(date +%Y%m%d_%H%M%S)` 作为终端命令在 execute_code 之前执行
 4. 备份是救命稻草 — 本条坑点因有 `.bak5` 恢复才没有造成永久损失
+5. ⚠️ 相关：**坑点 51** — 即使在单次 execute_code 中，用 `read_file()` 读文件也会因行号前缀损坏内容
 
 ### 坑点 26: 结论先于验证——所有局部错误的共同根因（2026-05-29 元规则 · 2026-06-04 再现）
 

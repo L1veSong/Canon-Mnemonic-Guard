@@ -1,4 +1,4 @@
-# Canon-Mnemonic-Guard Dashboard v1.0.0
+# Canon-Mnemonic-Guard Dashboard v1.0.1
 
 Web 可视化仪表盘，单文件 Python 服务器，零外部 web 依赖。
 

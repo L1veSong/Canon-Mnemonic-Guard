@@ -36,7 +36,7 @@ done
 # 检查所有 plan 文件中的版本号
 grep -ohE 'v[0-9]+\.[0-9]+\.[0-9]+' ~/.hermes/plans/cmg/*.md | sort | uniq -c
 
-# 基线版本应一致：CMG v5.6.0 + sentinel v1.4.0
+# 基线版本应一致：CMG v5.7.0 + sentinel v2.0.2
 # 计划版本（v1.5.0 / v2.0.0）是正常的
 ```
 

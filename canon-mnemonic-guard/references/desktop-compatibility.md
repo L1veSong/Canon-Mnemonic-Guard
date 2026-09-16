@@ -44,10 +44,19 @@ def _hook_enabled(hook_name: str) -> bool:
 | 功能 | CLI | Desktop |
 |------|:--:|:--:|
 | pre_tool_call（防改 SKILL.md） | ✅ | ✅ |
+| pre_tool_call（v2.0.0 path_write 路径保护） | ✅ 硬拦 | ✅ 硬拦 |
 | transform_llm_output（ban 关键词替换） | ✅ | 自动关 |
+| pre_llm_call 活跃规则注入 + URL 检测 | ✅ | ✅（context 注入安全，v1.4.0 豁免） |
+| pre_llm_call 行为检测器（v2.0.0 inject/toolseq） | ✅ | ✅（context 注入安全） |
 | pre_llm_call 哨兵（纠正自动感知） | ✅ 注入上下文 | ✅ 静默记录 |
 | pre_llm_call 任务推荐 | ✅ | 自动关 |
-| post_llm_call（完成证据校验） | ✅ | 自动关 |
+| pre_llm_call 步骤完整性检查 | ✅ | 自动关（CLI only） |
+| post_llm_call（完成证据校验/CoVe） | ✅ | 自动关 |
+| post_llm_call 行为 output 检测（v2.0.0） | ✅ | 自动关 |
+
+> 平台门控原则：**context 注入类**（pre_llm_call 子功能）跨平台安全，全部保留；
+> **输出替换/追加类**（post_llm_call、transform_llm_output）仅 CLI——非 CLI 无
+> AI 自检修正回路，拦截消息直接渲染到 UI 会卡死（坑点 38 教训）。
 
 ## 重启验证清单
 

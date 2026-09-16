@@ -1,5 +1,33 @@
 # CMG 生态系统更新日志
 
+## v5.7.0 (2026-09-16) — sentinel v2.0.x + Dashboard 修复 + 文档同步
+
+### 组件更新
+- **sentinel v1.4.0 → v2.0.2**：pre_tool_call 契约双修（返回值格式 + 入参命名兼容）→ 工具闸门落地（SKILL.md 写入门 / 终端写入门 / 桌面保护）；判定收窄（只读命令放行、系统消息前缀豁免）；词表维护。
+- **Dashboard v1.0.0 → v1.0.1**：配置读写 key 与 sentinel 命名对齐（修复配置页读写失效）；版本 badge 修正。
+- 文档与引用同步：references 命名对齐（sentinel-*）、发布校验清单与桌面兼容文档更新。
+
+### 升级说明
+- 覆盖安装后重启 Hermes / 桌面端 / gateway 生效（插件为进程级加载）。
+
+## v5.6.0 (2026-06-14) — 插件改名 + 规则清理 + Dashboard 修复
+
+### 重大变更
+- **sentinel（原 cmg-guard）改名**：插件名、配置 key、日志前缀全链路同步
+- **规则库清理**：gap 12→4, lazy 9→3（删除 4 空壳，归档 10 死规则到 dead/），总量 82→69
+- **Dashboard 七项修复**：时区 bug、趋势图 DPR 模糊、英文 i18n 补全、版本/配置自适应、CJK 审计
+
+### 组件版本
+- canon v2.7.2 / guard v4.8.3 / mnemonic v3.5.3（无变更）
+- canon-mnemonic-guard v5.6.0（文档同步改名 + 规则数更新）
+- sentinel v1.4.0（活跃规则注入 + URL 检测 + CoVe 自检 + 平台检测）
+- skill-autoload v1.0.1（无变更）
+
+### sentinel v1.3.0 → v1.4.0
+- pre_llm_call：活跃规则注入 + URL 检测提示 + 任务推荐
+- post_llm_call：CoVe 自检薄层
+- 平台检测：Desktop/GUI 自动跳过不兼容钩子
+
 ## v5.5.5 (2026-05-30) — sentinel v1.3.0 + 四名冲突检测
 
 ### 新增
@@ -63,6 +91,11 @@
 - canon-mnemonic-guard v5.5.3（+init.py 增强）
 
 ---
+
+## v5.5.2 (2026-05-25) — 默认固化阈值10→3
+
+- 默认自动固化阈值从 10 降至 3
+- 修复 init.py 版本号滞后（跨两个大版本未更新）
 
 ## v5.5.1 (2026-05-25) — 三层闭环首次发布
 

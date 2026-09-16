@@ -1,6 +1,6 @@
-# sentinel v1.2.0
+# sentinel v2.0.2
 
-> Hermes 插件：CMG 规则系统级强制拦截。从"事后检查"升级为"事前拦截"——AI 跳步骤 → LLM 调用前直接阻断。
+> Hermes 插件：CMG 规则系统级强制拦截。从"事后检查"升级为"事前拦截"——AI 跳步骤 → LLM 调用前直接阻断。v2.0.0 起覆盖 gap/lazy/meta 行为规则。
 
 ---
 
@@ -13,7 +13,7 @@ CMG 核心四线：
 Canon v2.7.2        → 典则线（规则生产库）
 Mnemonic v3.5.3     → 忆存线（状态记忆层）
 Guard v4.8.3        → 护栏线（规则执行器）
-canon-mnemonic-guard v5.6.0 → 外观层（四包索引 + 调度器）
+canon-mnemonic-guard v5.7.0 → 外观层（四包索引 + 调度器）
 ```
 
 配套插件：
@@ -103,9 +103,10 @@ plugins:
 sentinel:
   lightweight_sentinel: true   # 哨兵：否定词正则扫描用户输入
   step_check: true             # 步骤完整性检查（v1.2.0）
+  behavior_check: true         # 行为级检测器（v2.0.0：gap/lazy/meta）
 ```
 
-安装后重启 Hermes 生效。启动日志中看到 `[sentinel] v1.2.0 registered` 即成功。
+安装后重启 Hermes 生效。启动日志中看到 `[sentinel] v2.0.2 registered` 即成功。
 
 ---
 
@@ -182,6 +183,11 @@ sentinel/
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v2.0.2 | 2026-09-15 | 契约修复：pre_tool_call 迁移 `{"action":"block"}`（此前全通道失效）；post_llm_call 改 record-only；词表批次1（10 规则）；系统消息豁免 |
+| v2.0.1 | 2026-09-13 | 热修复：`timezone` import 缺失（_save_escalation/_maybe_add_to_blacklist NameError） |
+| v2.0.0 | 2026-09-03 | 行为级检测器：inject/toolseq/output/path_write，gap/lazy/meta 机器执行 |
+| v1.4.0 | 2026-06-14 | 活跃规则注入 + URL 检测 + 改名 sentinel |
+| v1.3.0 | 2026-05-30 | 17 Hook 全阶段覆盖 + 自披露闭环 |
 | v1.2.0 | 2026-05-28 | 步骤完整性检查 + 分阶段升级 + post_llm_call |
 | v1.1.0 | 2026-05-25 | 轻量哨兵（否定词正则） |
 | v1.0.0 | 2026-05-20 | 初始发布，transform_llm_output 关键词拦截 |

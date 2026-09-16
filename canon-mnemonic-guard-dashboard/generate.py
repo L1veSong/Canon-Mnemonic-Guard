@@ -227,7 +227,7 @@ footer {{
   <div style="display:flex;align-items:center;gap:10px;">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="3" stroke="#7c7cff" stroke-width="1.5"/><line x1="8" y1="8" x2="16" y2="8" stroke="#7c7cff" stroke-width="1.5"/><line x1="8" y1="12" x2="16" y2="12" stroke="#7c7cff" stroke-width="1.5"/><line x1="8" y1="16" x2="13" y2="16" stroke="#7c7cff" stroke-width="1.5"/></svg>
     <h1>Canon-Mnemonic-Guard Dashboard</h1>
-    <span class="badge">三省引擎 v5.5.5</span>
+    <span class="badge">三省引擎 v5.6.0</span>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <span class="badge" id="updated">—</span>
@@ -305,7 +305,7 @@ footer {{
   </div>
 </div>
 
-<footer>Canon-Mnemonic-Guard · 三省引擎 v5.5.5 · 数据源 ~/.hermes/self-reflection/</footer>
+<footer>Canon-Mnemonic-Guard · 三省引擎 v5.6.0 · 数据源 ~/.hermes/self-reflection/</footer>
 
 <script>
 const DATA = {rules_json};

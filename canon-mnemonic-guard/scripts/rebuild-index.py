@@ -7,7 +7,7 @@
     python3 rebuild-index.py --check             # 仅检查一致性（退出码 0=一致, 1=漂移）
 
 每次固化后建议运行此脚本，确保 _index.md 与实际文件数一致。
-CMG v5.5.5+ diagnose Phase 2 会检测漂移。
+CMG v5.6.0+ diagnose Phase 2 会检测漂移。
 """
 
 import os
@@ -21,7 +21,7 @@ RULES_DIR = os.path.expanduser('~/.hermes/self-reflection/rules')
 def collect_rules():
     """扫描 rules/ 目录，返回规则列表 [(cat, name, level, has_correction), ...]"""
     rules = []
-    for cat in ['ban', 'gap', 'lazy']:
+    for cat in ['ban', 'gap', 'lazy', 'meta']:
         pattern = os.path.join(RULES_DIR, cat, '*.md')
         for f in sorted(glob.glob(pattern)):
             name = os.path.splitext(os.path.basename(f))[0]
@@ -48,12 +48,13 @@ def build_index(rules):
     ban_count = sum(1 for r in rules if r[0] == 'ban')
     gap_count = sum(1 for r in rules if r[0] == 'gap')
     lazy_count = sum(1 for r in rules if r[0] == 'lazy')
+    meta_count = sum(1 for r in rules if r[0] == 'meta')
     total = len(rules)
 
     lines = [
         '# CMG 规则索引',
         '',
-        f'自动生成 | {total} 条规则 | ban:{ban_count} / gap:{gap_count} / lazy:{lazy_count}',
+        f'自动生成 | {total} 条规则 | ban:{ban_count} / gap:{gap_count} / lazy:{lazy_count} / meta:{meta_count}',
         '',
         '| # | 规则 | 类型 | level | correction |',
         '|---|------|------|-------|------------|',

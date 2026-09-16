@@ -1,11 +1,12 @@
 name: sentinel
-version: 1.4.0
+version: 2.0.2
 description: |
   CMG system-level enforcement plugin. Hard-enforces rules at multiple layers:
-  - pre_tool_call: blocks SKILL.md edits (read/write-aware — read_file/grep OK)
-  - pre_llm_call: step-completeness check + sentinel + blacklist
-  - post_llm_call: output rescan
+  - pre_tool_call: blocks skill-file writes + protected paths (write-aware; v2.0.2 契约修复 {"action":"block"})
+  - pre_llm_call: step-completeness check + sentinel + blacklist + behavior detectors
+  - post_llm_call: detect & record only (v0.21+ core consumes no return; blocks ride transform_llm_output)
   - transform_llm_output: ban keyword replacement in AI output
+  - v2.0.0: behavior-level detectors (gap/lazy/meta) — inject / toolseq / output / path_write
   - 13 additional configurable hooks for advanced enforcement
 author: L1veSong
 license: MIT

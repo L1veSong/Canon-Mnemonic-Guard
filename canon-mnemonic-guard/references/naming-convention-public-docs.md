@@ -1,40 +1,44 @@
-# 对外命名规范
+# Public-Facing Naming Convention
 
-> 来源：CMG Dashboard 开发（2026-05-30）· ban 规则 `ban_no_cmg_abbreviation`
+> Source: CMG Dashboard development (2026-05-30) · Extended 2026-06-15 to cover all project abbreviations
 
-## 规则
+## Rule
 
-在对外分发的文本中，**禁止使用项目缩写**。必须使用完整名称：
+In public-facing text, **all project abbreviations are forbidden**. Full names only:
 
-| 语境 | 使用 |
-|------|------|
-| 英文语境 | Canon-Mnemonic-Guard |
-| 中文语境 | 三省引擎 |
-| 技术文档内 | Canon-Mnemonic-Guard（可附中文括号） |
+| Abbreviation | Full Name (English) | Full Name (Chinese) |
+|-------------|---------------------|---------------------|
+| CMG | Canon-Mnemonic-Guard | 三省引擎 |
+| Smart Skill Router | Smart Skill Router | 智配路由 |
+| IF | Idea Foundry | Idea Foundry |
+| RTK | RTK Rewrite | RTK Rewrite |
+| VBC | Verification Before Completion | — |
+| CoVe | Chain-of-Verification | — |
 
-## 适用范围
+## Scope
 
-以下文本属于「对外分发」，禁止缩写：
+"Public-facing" means any text seen by anyone other than the developer:
 - README.md / CHANGELOG.md
-- Dashboard 等可视化界面
-- GitHub 发布公告
-- 子组件 SKILL.md 的 description 字段
-- 任何会被用户以外的人看到的文本
+- Dashboard and other UI surfaces
+- GitHub release announcements
+- Sub-component SKILL.md description fields
+- Companion skill tables
+- Any document pushed to public repositories
 
-## 例外
+## Exception
 
-内部会话中快速指代可以使用缩写，因为是 AI 与开发者之间的内部沟通。
+Internal session dialogue between AI and developer may use abbreviations — this is private communication.
 
-## 检查方法
+## Verification
 
-发布前扫描所有对外文件：
+Pre-release scan across all public files:
 ```bash
-grep -rn 'CMG' README.md CHANGELOG.md *.html 2>/dev/null | grep -v 'CMG_'
-# 排除变量名 CMG_GUARD / CMG_SKILL 等，其他命中全部替换
+grep -rn '\bSSR\b\|\bIF\b\|\bRTK\b\|\bVBC\b\|\bCoVe\b\|\bCMG\b' README.md CHANGELOG.md SKILL.md 2>/dev/null | grep -v 'CMG_\|Canon-Mnemonic-Guard\|Smart Skill Router\|Idea Foundry\|RTK Rewrite\|Chain-of-Verification'
 ```
+Replace any hits with full names.
 
-## 关联
+## Related
 
-- SKILL.md 坑点 41
-- hermes-agent-skill-authoring SKILL.md 坑点 41
-- CMG ban 规则 `ban_no_cmg_abbreviation` (rules/ban/)
+- SKILL.md Pitfall 32
+- hermes-agent-skill-authoring SKILL.md
+- CMG ban rule `ban_no_project_abbreviations` (rules/ban/)

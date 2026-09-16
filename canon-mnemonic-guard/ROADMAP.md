@@ -1,6 +1,6 @@
 # CMG 未来路线图
 
-## 近期（v5.5.5 → v5.5.6+）
+## 近期（v5.7.0+）
 
 ### 拦截可见性增强
 - 拦截提示：transform_llm_output 静默→明示（intercept_notice 开关 ✅ 已实现）

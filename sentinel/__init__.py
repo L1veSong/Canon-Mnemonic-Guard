@@ -1,5 +1,5 @@
 """
-sentinel v1.4.0: + pre_llm_call 活跃规则注入 + URL 检测提示 + post_llm_call CoVe 自检薄层。
+sentinel v2.0.2: pre_tool_call 契约双修 + 工具闸门落地（SKILL.md 写入门 / 终端写入门 / 桌面保护）+ 判定收窄 + 词表维护。
 
 v1.4.0: + _inject_active_rules (CLI+GUI: 按任务匹配 5-10 条最相关 ban 规则注入上下文)
         + _detect_urls (CLI+GUI: 检测用户消息中的 URL，提示使用 web_extract)
@@ -28,6 +28,7 @@ import logging
 import os
 import re
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Set
 
@@ -121,6 +122,38 @@ def _step_check_enabled() -> bool:
     if "step_check" not in cfg:
         return True
     return bool(cfg["step_check"])
+
+
+def _behavior_check_enabled() -> bool:
+    """v2.0.0: gate for behavior-level detectors (gap/lazy/meta rules)."""
+    cfg = _load_cmg_config()
+    if "behavior_check" not in cfg:
+        return True
+    return bool(cfg["behavior_check"])
+
+
+def _log_intercept(rule_id: str, reason: str, action: str = "block") -> None:
+    """v2.0.0: append an intercept record to intercept_log.jsonl.
+
+    Unifies the sentinel hard-intercept pipeline with the CMG
+    intercept_log data source (previously only Guard skill wrote it).
+    Best-effort: failures are logged, never crash the hook.
+    """
+    try:
+        rec_path = Path(os.path.expanduser(
+            "~/.hermes/self-reflection/intercept_log.jsonl"
+        ))
+        rec = {
+            "ts": datetime.now().isoformat(),
+            "interceptor": "Sentinel",
+            "rule_id": rule_id,
+            "action": action,
+            "reason": reason[:200],
+        }
+        with open(rec_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        logger.debug("[sentinel] intercept log write failed: %s", e)
 
 
 def _task_recommendations_enabled() -> bool:
@@ -239,6 +272,7 @@ def _scan_blacklist(message: str) -> Optional[str]:
     for pattern in bl:
         if pattern.lower() in lower:
             logger.warning("[sentinel] blacklist hit: '%s'", pattern[:80])
+            _log_intercept("blacklist", f"永久黑名单命中: {pattern[:80]}")
             return f"[CMG-BLACKLIST] 此行为已被永久禁止: {pattern}"
     return None
 
@@ -291,8 +325,15 @@ def _load_ban_keywords() -> Dict[str, Tuple[str, List[str]]]:
                     kw = p.strip().strip("'").strip('"').lower()
                     if kw and len(kw) >= 2:
                         keywords.append(kw)
+            # 解析 level 字段（hard=拦截 / soft=注入提醒 / monitor=仅记录不拦截）
+            level = "hard"
+            for line in fm_text.split("\n"):
+                s = line.strip()
+                if s.startswith("level:"):
+                    level = s[6:].strip().strip('"').strip("'").lower() or "hard"
+                    break
             if keywords:
-                result[rule_id] = (md_file.stem, keywords)
+                result[rule_id] = (md_file.stem, level, keywords)
         except Exception:
             pass
     _BAN_KEYWORDS = result
@@ -305,10 +346,15 @@ def _scan_text(text: str) -> Optional[str]:
     if not rules:
         return None
     lower = text.lower()
-    for rule_id, (stem, keywords) in rules.items():
+    for rule_id, (stem, level, keywords) in rules.items():
         for kw in keywords:
             if kw in lower:
-                logger.warning("[sentinel] rule %s hit: '%s'", rule_id, kw)
+                logger.warning("[sentinel] rule %s hit: '%s' (level=%s)", rule_id, kw, level)
+                if level in ("soft", "monitor"):
+                    # soft/monitor: 仅记录与注入提醒, 不替换输出（替换会打断对话流）
+                    _log_intercept(rule_id, f"关键词匹配: {stem} / '{kw}'", "record")
+                    continue
+                _log_intercept(rule_id, f"关键词匹配: {stem} / '{kw}'", "block")
                 return (
                     f"[CMG 拦截] 你的回答命中了规则 \"{stem}\"（关键词: \"{kw}\"）。"
                     f"请遵守 CMG 规则重新回答。"
@@ -321,22 +367,25 @@ def _scan_text(text: str) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 _SENTINEL_PATTERN_1 = re.compile(
-    r"(不|别|不能|别再|不要|不该|不许|怎么又|又忘了|又犯|又偷|又懒|"
-    r"你总[是说]|你咋|你又|别再|不准)"
-    r".{0,15}"
-    r"(你|我|这么|这样|那么|那|这|还|再|老|了|啦|吧|啊)"
+    r"(怎么又|又忘了|又犯|又偷|又懒|你总[是说]|你咋|你又|别再|"
+    r"不准|不许|不该|不能这么|不要这么|别这么)"
 )
 _SENTINEL_PATTERN_2 = re.compile(r"^(别|不要|不能|不许|不该|别再|不准)")
 _SENTINEL_PATTERN_3 = re.compile(
     r"(记住[了没]?|明白[了没]|懂[了没]|"
     r"下次还|以后还|还敢|还能不能|"
-    r"说了多少次|能不能|好了再说|"
+    r"说了多少次|好了再说|"
     r"长点记性|长记性)"
 )
 
 
 def _scan_user_message(user_message: str) -> Optional[str]:
     if not user_message or len(user_message) < 2:
+        return None
+    # v2.0.2: 系统注入消息豁免——cron/skill 激活通知与框架标记不是"用户纠错"，
+    # 此前被反复误计（例：'[IMPORTANT: The user has invoked ... skill ...]' 累计 29 次→误拉黑）。
+    _head = user_message.lstrip()[:48].lower()
+    if _head.startswith(("[important", "[system", "important the user has invoked", "[cmg", "以下技能已配置为自动加载")):
         return None
     if (_SENTINEL_PATTERN_1.search(user_message) or
             _SENTINEL_PATTERN_2.search(user_message) or
@@ -701,6 +750,96 @@ def _load_ban_rules() -> List[dict]:
     return rules
 
 
+# ---------------------------------------------------------------------------
+# v2.0.0: Behavior-level rule loading (gap / lazy / meta)
+# ---------------------------------------------------------------------------
+
+_BEHAVIOR_RULES_CACHE: Optional[List[dict]] = None
+_BEHAVIOR_RULE_MTIMES: Dict[str, float] = {}
+
+_BEHAVIOR_DIRS = {
+    "gap": "~/.hermes/self-reflection/rules/gap",
+    "lazy": "~/.hermes/self-reflection/rules/lazy",
+    "meta": "~/.hermes/self-reflection/rules/meta",
+}
+
+
+def _load_behavior_rules() -> List[dict]:
+    """Load gap/lazy/meta rules with `detector` frontmatter field.
+
+    Config-driven: a rule file only becomes machine-enforced when its
+    frontmatter declares `detector:` (inject | output | toolseq | path_write).
+    Rules without a detector stay advisory (AI responsibility).
+    Per-file mtime cache, same pattern as ban rules.
+    """
+    global _BEHAVIOR_RULES_CACHE, _BEHAVIOR_RULE_MTIMES
+    if not _behavior_check_enabled():
+        return _BEHAVIOR_RULES_CACHE if _BEHAVIOR_RULES_CACHE is not None else []
+
+    current_mtimes: Dict[str, float] = {}
+    file_to_type: Dict[str, str] = {}
+    for rtype, dir_glob in _BEHAVIOR_DIRS.items():
+        d = Path(os.path.expanduser(dir_glob))
+        if not d.is_dir():
+            continue
+        for rule_file in d.glob("*.md"):
+            try:
+                current_mtimes[rule_file.name] = rule_file.stat().st_mtime
+            except OSError:
+                current_mtimes[rule_file.name] = 0
+            file_to_type[rule_file.name] = rtype
+
+    if _BEHAVIOR_RULES_CACHE is not None:
+        cache_valid = (
+            current_mtimes.keys() == _BEHAVIOR_RULE_MTIMES.keys()
+            and all(
+                _BEHAVIOR_RULE_MTIMES.get(name) == mtime
+                for name, mtime in current_mtimes.items()
+            )
+        )
+        if cache_valid:
+            return _BEHAVIOR_RULES_CACHE
+
+    rules = []
+    for rtype, dir_glob in _BEHAVIOR_DIRS.items():
+        d = Path(os.path.expanduser(dir_glob))
+        if not d.is_dir():
+            continue
+        for rule_file in sorted(d.glob("*.md")):
+            try:
+                content = rule_file.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            fm_match = re.match(r"^---\s*\n(.*?)\n---", content, re.DOTALL)
+            if not fm_match:
+                continue
+            try:
+                fm = _parse_fm(fm_match.group(1))
+            except Exception:
+                continue
+            detector = fm.get("detector")
+            if not detector:
+                continue  # advisory only — no machine enforcement
+            title_match = re.search(r"\n#\s+(.+?)\n", content[fm_match.end():])
+            title = title_match.group(1).strip() if title_match else rule_file.stem
+            rules.append({
+                "id": fm.get("id", rule_file.stem),
+                "title": title,
+                "type": str(fm.get("type", rtype)),
+                "detector": str(detector),
+                "keywords": [],
+                "triggers": fm.get("triggers") or [],
+                "required_tools": fm.get("required_tools") or [],
+                "required_pattern": fm.get("required_pattern") or "",
+                "protection_paths": fm.get("protection_paths") or [],
+                "correction_template": str(fm.get("correction_template", "")),
+            })
+    _BEHAVIOR_RULES_CACHE = rules
+    _BEHAVIOR_RULE_MTIMES = current_mtimes
+    logger.debug("[sentinel] loaded %d behavior rules with detectors", len(rules))
+    return rules
+
+
 # Session cache for active rules injection (avoid duplicate injection)
 _INJECT_SESSION_CACHE: Dict[str, frozenset] = {}
 
@@ -755,6 +894,190 @@ def _inject_active_rules(user_message: str, session_id: str = "") -> Optional[st
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------------------
+# v2.0.0: Behavior detectors (inject / output / toolseq / path_write)
+# ---------------------------------------------------------------------------
+
+_BEHAVIOR_INJECT_CACHE: Dict[str, frozenset] = {}
+
+
+def _behavior_inject(user_message: str = "", session_id: str = "") -> Optional[str]:
+    """pre_llm_call: inject behavior rules whose triggers match (soft hint).
+
+    Same dedupe pattern as _inject_active_rules — one injection per
+    session per rule.
+    """
+    if not user_message or len(user_message) < 4:
+        return None
+    rules = _load_behavior_rules()
+    if not rules:
+        return None
+    msg_lower = user_message.lower()
+    matched = []
+    for rule in rules:
+        if rule["detector"] not in ("inject",):
+            continue
+        for trg in rule["triggers"]:
+            if isinstance(trg, str) and trg and trg.lower() in msg_lower:
+                matched.append(rule)
+                break
+    if not matched:
+        return None
+    cache = _BEHAVIOR_INJECT_CACHE.setdefault(session_id, frozenset())
+    ids = frozenset(r["id"] for r in matched)
+    if ids.issubset(cache):
+        return None
+    _BEHAVIOR_INJECT_CACHE[session_id] = cache | ids
+
+    lines = ["[CMG 行为约束] 检测到相关行为规范，请注意遵守："]
+    for r in matched:
+        hint = ""
+        if r.get("correction_template"):
+            tmpl = r["correction_template"]
+            hint = f"\n  修正: {tmpl[:120]}"
+        lines.append(f"  [{r['type']}] {r['title']}{hint}")
+    logger.info("[sentinel] behavior inject: %d rules matched", len(matched))
+    return "\n".join(lines)
+
+
+def _tool_entry(tool_name: str, tool_args: Optional[dict] = None) -> str:
+    """Build a tool-trace entry with a key parameter, so toolseq detectors
+    can require specific targets (e.g. skill_view::hermes-agent-skill-authoring).
+
+    Falls back to bare tool name when no meaningful key exists.
+    """
+    args = tool_args or {}
+    if tool_name == "skill_view" and args.get("name"):
+        return f"skill_view::{args['name']}"
+    if tool_name in ("write_file", "patch", "read_file") and args.get("path"):
+        return f"{tool_name}::{args['path']}"
+    if tool_name == "terminal" and args.get("command"):
+        first = re.split(r"\s+", str(args["command"]).strip())[0]
+        return f"terminal::{first}"
+    return tool_name
+
+
+def _toolseq_hit(used: set, required_tool: str) -> bool:
+    """Exact membership in the tool trace (e.g. 'skill_view::tdd').
+    A bare 'skill_view' does NOT satisfy 'skill_view::tdd' — the specific
+    target must have been loaded.
+    """
+    return required_tool in used
+
+
+def _behavior_toolseq(user_message: str = "", session_id: str = "") -> Optional[str]:
+    """pre_llm_call: task triggers matched but required tools never appeared
+    in the session tool trace → warn (soft).
+
+    Tool trace comes from _get_session()['tools_used'], maintained by the
+    pre_tool_call hook.
+    """
+    if not user_message or len(user_message) < 4:
+        return None
+    rules = _load_behavior_rules()
+    if not rules:
+        return None
+    sess = _get_session(session_id)
+    used = set(sess.get("tools_used") or []) if sess else set()
+    msg_lower = user_message.lower()
+    matches = []
+    for rule in rules:
+        if rule["detector"] != "toolseq":
+            continue
+        hit = any(
+            (isinstance(t, str) and t.lower() in msg_lower)
+            for t in rule["triggers"]
+        ) if rule["triggers"] else False
+        if not hit:
+            continue
+        req = rule["required_tools"]
+        if req:
+            missing = [t for t in req if not _toolseq_hit(used, t)]
+            if missing:
+                matches.append((rule, missing))
+    if not matches:
+        return None
+
+    lines = ["[CMG 流程检查] 以下流程要求的工具/步骤尚未执行："]
+    for rule, missing in matches:
+        lines.append(f"  [{rule['type']}] {rule['title']} — 缺少: {', '.join(missing)}")
+        if rule.get("correction_template"):
+            lines.append(f"    修正: {rule['correction_template'][:120]}")
+    logger.info("[sentinel] toolseq warn: %d rules missing tools", len(matches))
+    return "\n".join(lines)
+
+
+def _behavior_output_check(response_text: str = "", session_id: str = "") -> Optional[str]:
+    """post_llm_call: required output format missing → append reminder (soft)."""
+    if not response_text or len(response_text) < 10:
+        return None
+    rules = _load_behavior_rules()
+    if not rules:
+        return None
+    notices = []
+    for rule in rules:
+        if rule["detector"] != "output":
+            continue
+        pat = rule["required_pattern"]
+        if not pat:
+            continue
+        try:
+            if not re.search(pat, response_text):
+                notices.append(rule)
+        except re.error:
+            continue
+    if not notices:
+        return None
+    lines = ["[CMG 格式检查] 回复中缺少以下必需内容："]
+    for r in notices:
+        lines.append(f"  [{r['type']}] {r['title']}")
+        if r.get("correction_template"):
+            lines.append(f"    要求: {r['correction_template'][:120]}")
+    logger.info("[sentinel] output check: %d rules missing", len(notices))
+    return "\n".join(lines)
+
+
+def _behavior_path_guard(tool_name: str = "", tool_args: Optional[dict] = None) -> Optional[dict]:
+    """pre_tool_call: write target hits a protected path → block (hard).
+
+    Only fires for write operations (write_file / patch / terminal writes)
+    targeting paths matching a rule's protection_paths. Read ops pass.
+    """
+    if tool_name not in ("write_file", "patch", "terminal"):
+        return None
+    rules = _load_behavior_rules()
+    if not rules:
+        return None
+    args = tool_args or {}
+    target = ""
+    if tool_name in ("write_file", "patch"):
+        target = str(args.get("path", ""))
+    else:
+        cmd = str(args.get("command", ""))
+        if not re.search(r"(write_file|patch|tee\s|>>|>(?![&])|sed\s)", cmd):
+            return None
+        target = cmd[:300]
+    if not target:
+        return None
+    for rule in rules:
+        if rule["detector"] != "path_write":
+            continue
+        for pat in rule["protection_paths"]:
+            try:
+                if re.search(pat, target):
+                    logger.warning("[sentinel] path_write block: %s %s", tool_name, target[:60])
+                    return {
+                        "action": "block",
+                        "message": (
+                            f"[CMG-GATE] {rule['title']}：目标路径命中保护规则({pat})。"
+                            "请先确认路径正确并完成备份（cp 目标文件后重试）。"
+                        ),
+                    }
+            except re.error:
+                continue
+    return None
+
+
 # ── v1.4.0: URL 检测 ──────────────────────────────────────────────────────
 
 # Strip trailing punctuation from URLs to avoid matching "https://example.com)."
@@ -776,14 +1099,18 @@ def _detect_urls(user_message: str) -> Optional[str]:
 
     unique = list(dict.fromkeys(urls))
     if len(unique) == 1:
-        hint = f"[CMG 素材提示] 检测到链接: {unique[0]}\n请使用 web_extract 读取内容后再回答。"
+        hint = (
+            f"[CMG 素材提示] 检测到链接: {unique[0]}\n"
+            "按站点类型选择工具：静态明文（.md/.json/.txt/API/raw）→ web_extract；"
+            "官网/文档站/博客等 JS 渲染站点 → 直接 browser。"
+        )
     else:
         url_list = "\n".join(f"  • {u}" for u in unique[:5])
         more = f"\n  ... 等 {len(unique)} 个链接" if len(unique) > 5 else ""
         hint = (
             f"[CMG 素材提示] 检测到 {len(unique)} 个链接:\n"
             f"{url_list}{more}\n"
-            "请使用 web_extract 读取链接内容后再回答。"
+            "按站点类型选择工具：静态明文 → web_extract；JS 渲染站点 → browser。"
         )
     logger.info("[sentinel] URL hint: %d URLs detected", len(unique))
     return hint
@@ -833,6 +1160,16 @@ def _pre_llm_call(user_message: str = "", session_id: str = "", **kwargs) -> Opt
         rec_msg = _check_task_recommendations(user_message, session_id)
         if rec_msg:
             contexts.append(rec_msg)
+
+    # v2.0.0: Behavior inject (ALL platforms — context only, safe)
+    behavior_ctx = _behavior_inject(user_message, session_id)
+    if behavior_ctx:
+        contexts.append(behavior_ctx)
+
+    # v2.0.0: Behavior toolseq warn (ALL platforms — context only)
+    toolseq_ctx = _behavior_toolseq(user_message, session_id)
+    if toolseq_ctx:
+        contexts.append(toolseq_ctx)
 
     # Step completeness check (CLI only)
     if is_cli:
@@ -930,7 +1267,7 @@ def _add_cove_check(response_text: str) -> Optional[str]:
     )
 
 
-def _post_llm_call(response_text: str = "", session_id: str = "", **kwargs) -> Optional[dict]:
+def _post_llm_call(response_text: str = "", session_id: str = "", assistant_response: str = "", **kwargs) -> Optional[dict]:
     """post_llm_call hook: apply evidence checking and CoVe self-check.
 
     Returns {'alteration': new_text_with_appended_check} if any check fires,
@@ -941,6 +1278,7 @@ def _post_llm_call(response_text: str = "", session_id: str = "", **kwargs) -> O
     """
     if not _hook_enabled("post_llm_call"):
         return None
+    response_text = response_text or assistant_response  # v2.0.2: 内核以 assistant_response= 传参
     if not response_text:
         return None
 
@@ -958,12 +1296,18 @@ def _post_llm_call(response_text: str = "", session_id: str = "", **kwargs) -> O
         if cove_check:
             suffix_parts.append(cove_check)
 
+    # v2.0.0: Behavior output check (SSR report / format rules)
+    behavior_check = _behavior_output_check(response_text, session_id)
+    if behavior_check:
+        suffix_parts.append(behavior_check)
+
     if not suffix_parts:
         return None
 
-    altered = response_text.rstrip() + "\n\n" + "\n\n".join(suffix_parts)
-    logger.debug("[sentinel] post_llm_call: appended %d checks", len(suffix_parts))
-    return {"alteration": altered}
+    # v2.0.2: Hermes v0.21+ 的 turn_finalizer 只触发 post_llm_call、不消费其返回值（实测确认），
+    # 此前的 {"alteration": ...} 从未生效。改为仅记录：检测结果写日志，用户可见的拦截统一走 transform_llm_output。
+    logger.info("[sentinel] post_llm_call checks fired (record-only): %d item(s)", len(suffix_parts))
+    return None
 
 
 # ── Core: pre_tool_call ──────────────────────────────────────────────────
@@ -973,7 +1317,8 @@ _SUBAGENT_TOOLS = frozenset({
 })
 
 
-def _pre_tool_call(tool_name: str = "", tool_args: Optional[dict] = None, session_id: str = "", **kwargs) -> Optional[dict]:
+def _pre_tool_call(tool_name: str = "", tool_args: Optional[dict] = None, session_id: str = "",
+                   args: Optional[dict] = None, **kwargs) -> Optional[dict]:
     """pre_tool_call gate for SKILL.md editing and subagent relay.
 
     GUARD_ROLE: Determines whether a tool call is a "read" or "write" operation
@@ -985,9 +1330,18 @@ def _pre_tool_call(tool_name: str = "", tool_args: Optional[dict] = None, sessio
     if not _hook_enabled("pre_tool_call"):
         return None
 
+    # v2.0.2: Hermes v0.21 内核以 args= 传参（旧 API 名为 tool_args=）——两种命名都接，否则闸门拿到空参空转。
+    if not isinstance(tool_args, dict):
+        _core_args = args if isinstance(args, dict) else kwargs.get("args")
+        tool_args = _core_args if isinstance(_core_args, dict) else None
+
+    # ── v2.0.0: tool trace recording (for toolseq detectors) ──────────
+    sess = _get_session(session_id)
+    used = sess.setdefault("tools_used", set())
+    used.add(_tool_entry(tool_name, tool_args))
+
     # ── Subagent relay tracking ──────────────────────────────────────
     if tool_name in _SUBAGENT_TOOLS:
-        sess = _get_session(session_id)
         sess["last_subagent_relay"] = True
         return None
 
@@ -995,11 +1349,13 @@ def _pre_tool_call(tool_name: str = "", tool_args: Optional[dict] = None, sessio
     if tool_name in ("write_file", "patch"):
         args = tool_args or {}
         file_path = args.get("path", "")
-        if file_path and "skill" in file_path.lower():
+        _p = file_path.replace("\\", "/").lower()
+        if file_path and (".hermes/skills/" in _p or ".agents/skills/" in _p or _p.endswith("skill.md")):
             logger.warning("[sentinel] blocked skill write: %s %s", tool_name, file_path)
+            _log_intercept("skill_edit_gate", f"禁止直接写 skill 文件: {tool_name} {file_path}")
             return {
-                "block": True,
-                "reason": "[CMG-GATE] 禁止直接写入 skill 文件。请使用 skill_manage(action='create'|'patch') 操作 skill。",
+                "action": "block",
+                "message": "[CMG-GATE] 禁止直接写入 skill 文件。请使用 skill_manage(action='create'|'patch') 操作 skill。",
             }
 
     if tool_name == "terminal":
@@ -1007,10 +1363,17 @@ def _pre_tool_call(tool_name: str = "", tool_args: Optional[dict] = None, sessio
         cmd = args.get("command", "")
         if _is_skill_write_via_terminal(cmd):
             logger.warning("[sentinel] blocked terminal skill write: %s", cmd[:80])
+            _log_intercept("skill_edit_gate", f"禁止终端写入 skill: {cmd[:80]}")
             return {
-                "block": True,
-                "reason": "[CMG-GATE] 禁止通过终端写入 skill 文件。请使用 skill_manage(action='create'|'patch') 操作 skill。",
+                "action": "block",
+                "message": "[CMG-GATE] 禁止通过终端写入 skill 文件。请使用 skill_manage(action='create'|'patch') 操作 skill。",
             }
+
+    # ── v2.0.0: behavior path guard (path_write detectors) ────────────
+    guard = _behavior_path_guard(tool_name, tool_args)
+    if guard:
+        _log_intercept("path_guard", (guard.get("reason") or "")[:120])
+        return guard
 
     return None
 
@@ -1018,7 +1381,7 @@ def _pre_tool_call(tool_name: str = "", tool_args: Optional[dict] = None, sessio
 def _is_skill_write_via_terminal(cmd: str) -> bool:
     """Check if a terminal command writes to a skill file path."""
     skill_pattern = re.compile(
-        r"(sed|tee|>>|>)\s+.*skill",
+        r"(sed|tee|>>|>)\s*.*?(\.hermes/skills/|\.agents/skills/|skill\.md)",
         re.IGNORECASE,
     )
     return bool(skill_pattern.search(cmd))
@@ -1029,11 +1392,13 @@ def _is_skill_write_via_terminal(cmd: str) -> bool:
 # ===========================================================================
 
 def register(ctx) -> None:
-    """Register sentinel hooks with Hermes (v1.4.0 + new plugin API)."""
+    """Register sentinel hooks with Hermes (v2.0.0 + new plugin API)."""
     sentinel = _sentinel_enabled()
     step_check = _step_check_enabled()
+    behavior = _behavior_check_enabled()
     bl_size = len(_load_blacklist())
     rules = _load_ban_keywords()
+    b_rules = _load_behavior_rules()
 
     # Register hooks via new ctx API (Hermes v0.14+)
     # Core hooks — always have implementations
@@ -1063,10 +1428,12 @@ def register(ctx) -> None:
             active.append(hook_name)
 
     logger.info(
-        "[sentinel] v1.4.0 registered (%d rules, sentinel=%s, step-check=%s, blacklist=%d, hooks=%s)",
+        "[sentinel] v2.0.2 registered (%d ban rules, %d behavior rules, sentinel=%s, step-check=%s, behavior=%s, blacklist=%d, hooks=%s)",
         len(rules),
+        len(b_rules),
         "ON" if sentinel else "OFF",
         "ON" if step_check else "OFF",
+        "ON" if behavior else "OFF",
         bl_size,
         "+".join(h.split("_")[-1][:4] for h in active) if active else "none",
     )

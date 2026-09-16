@@ -17,31 +17,6 @@ PORT = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[1] == '--port' else 87
 
 CMG_SKILL_PATH = os.path.expanduser('~/.hermes/skills/software-development/canon-mnemonic-guard/SKILL.md')
 
-def _cmg_version():
-    """Read CMG version from SKILL.md frontmatter."""
-    try:
-        with open(CMG_SKILL_PATH) as f:
-            for line in f:
-                if line.startswith("version:"):
-                    return line.split(":",1)[1].strip()
-    except: pass
-    return "?.?.?"
-
-def _sentinel_config_key():
-    """Auto-detect sentinel plugin config key."""
-    py = os.path.expanduser("~/.hermes/plugins/sentinel/plugin.yaml")
-    if os.path.exists(py):
-        try:
-            with open(py) as f:
-                d = yaml.safe_load(f) or {}
-            return d.get("name", "sentinel")
-        except: pass
-    return "sentinel"
-
-CMG_VERSION = _cmg_version()
-SENTINEL_KEY = _sentinel_config_key()
-
-
 def _parse_cmg_tables():
     """Parse companion skill tables from CMG SKILL.md. Returns [{id, desc}].
     Reads from '## 配套 Skill 生态' section, stops at next major heading."""
@@ -124,7 +99,7 @@ def read_companion_skills():
     if os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH) as f:
             c = yaml.safe_load(f) or {}
-        cfg_toggles = c.get(SENTINEL_KEY, {}).get('companion_skills', {})
+        cfg_toggles = c.get('sentinel', {}).get('companion_skills', {})
     result = []
     for s in _parse_cmg_tables():
         installed = check_skill_installed(s['id'])
@@ -238,11 +213,9 @@ def read_intercept_trend():
             if not line: continue
             try:
                 entry = json.loads(line)
-                ts = entry.get('timestamp', '') or entry.get('ts', '')
+                ts = entry.get('timestamp', '')
                 if ts:
                     dt = _dt.datetime.fromisoformat(ts.replace('Z', '+00:00'))
-                    if dt.tzinfo is None:
-                        dt = dt.replace(tzinfo=_dt.timezone.utc)
                     days_ago = (now - dt).days
                     if 0 <= days_ago < 30: counts[days_ago] += 1
                 total += 1
@@ -251,27 +224,27 @@ def read_intercept_trend():
     return {'days': days, 'counts': [counts.get(d, 0) for d in days], 'total': total}
 
 def read_config():
-    """Read sentinel config section (auto-detected)."""
+    """Read sentinel section from config.yaml."""
     if not os.path.exists(CONFIG_PATH):
         return {'intercept_notice': 'silent', 'hooks': {}}
     with open(CONFIG_PATH) as f:
         cfg = yaml.safe_load(f) or {}
-    return cfg.get(SENTINEL_KEY, {'intercept_notice': 'silent', 'hooks': {}})
+    return cfg.get('sentinel', {'intercept_notice': 'silent', 'hooks': {}})
 
 def write_config(cmg_config: dict):
-    """Write sentinel config section back (auto-detected)."""
+    """Write sentinel section back to config.yaml, deep-merging with existing."""
     if not os.path.exists(CONFIG_PATH):
         return False
     with open(CONFIG_PATH) as f:
         cfg = yaml.safe_load(f) or {}
-    existing = cfg.get(SENTINEL_KEY, {})
+    existing = cfg.get('sentinel', {})
     # Deep-merge: only overwrite fields that are present in the payload
     for key, val in cmg_config.items():
         if isinstance(val, dict) and isinstance(existing.get(key), dict):
             existing[key].update(val)
         else:
             existing[key] = val
-    cfg[SENTINEL_KEY] = existing
+    cfg['sentinel'] = existing
     with open(CONFIG_PATH, 'w') as f:
         yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
     return True
@@ -453,7 +426,7 @@ header h1 { font-size:22px; font-weight:600; color:var(--text-primary); letter-s
 .stat-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.15); }
 .stat-card .label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
 .stat-card .value { font-size:30px; font-weight:600; color:var(--text-primary); letter-spacing:-0.8px; line-height:1.1; }
-.stat-card .sub { font-size:12px; color:var(--text-tertiary); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.stat-card .sub { font-size:12px; color:var(--text-tertiary); margin-top:2px; }
 .stat-card.accent { border-color:rgba(92,92,255,0.3); }
 .stat-card.accent .value { color:var(--accent); }
 .stat-card.warn { border-color:rgba(248,81,73,0.3); }
@@ -671,12 +644,12 @@ footer { text-align:center; padding:20px; color:var(--text-muted); font-size:12p
   <div style="display:flex;align-items:center;gap:10px;">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="3" stroke="#7c7cff" stroke-width="1.5"/><line x1="8" y1="8" x2="16" y2="8" stroke="#7c7cff" stroke-width="1.5"/><line x1="8" y1="12" x2="16" y2="12" stroke="#7c7cff" stroke-width="1.5"/><line x1="8" y1="16" x2="13" y2="16" stroke="#7c7cff" stroke-width="1.5"/></svg>
     <h1 data-i18n="title">Canon-Mnemonic-Guard Dashboard</h1>
-    <span class="badge">v''' + CMG_VERSION + '''</span>
+    <span class="badge">v5.6.0</span>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <button class="lang-switch" onclick="switchLang()" id="langBtn" data-i18n="lang">English</button>
     <span class="badge" id="clock">—</span>
-    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" data-i18n="theme_light">☀ 亮色</button>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀ 亮色</button>
   </div>
 </header>
 
@@ -703,10 +676,10 @@ footer { text-align:center; padding:20px; color:var(--text-muted); font-size:12p
         <option value="meta" data-i18n="meta_label">meta · 元规则</option>
       </select>
       <span style="font-size:12px;color:var(--text-muted)" id="rowCount"></span>
-      <button class="export-btn" onclick="exportRules()" data-i18n="export_btn">⬇ 导出</button>
-      <button class="export-btn" id="batchToggle" onclick="toggleBatchMode()" data-i18n="batch_btn">☐ 批量</button>
+      <button class="export-btn" onclick="exportRules()">⬇ 导出</button>
+      <button class="export-btn" id="batchToggle" onclick="toggleBatchMode()">☐ 批量</button>
       <span id="batchActions" style="display:none">
-        <span class="export-btn" id="selectAllBtn" onclick="toggleSelectAllBtn()" style="cursor:pointer" data-i18n="select_all">☐ 全选</span>
+        <span class="export-btn" id="selectAllBtn" onclick="toggleSelectAllBtn()" style="cursor:pointer">☐ 全选</span>
         <button class="export-btn" onclick="batchDelete()" style="color:var(--red);border-color:var(--red);margin-left:8px">批量删除</button>
       </span>
     </div>
@@ -835,7 +808,7 @@ footer { text-align:center; padding:20px; color:var(--text-muted); font-size:12p
   </div>
 </div>
 
-<footer><span data-i18n="footer">三省引擎</span> v''' + CMG_VERSION + ''' · localhost:''' + str(PORT) + '''</footer>
+<footer><span data-i18n="footer">三省引擎</span> v5.6.0 · localhost:''' + str(PORT) + '''</footer>
 
 <script>
 var rulesData = [];
@@ -1201,8 +1174,6 @@ document.getElementById('editModal').addEventListener('click', function(e){
 });
 
 // ── Language Switching ──
-// Keys use Chinese text as-is. New UI text = new key auto-works in zh.
-// Only add English translation. Audit runs after switch — CJK in en mode = red outline.
 var I18N = {
   zh: {
     title:'三省引擎仪表盘', lang:'English', rules_tab:'规则库', config_tab:'引擎配置', add_tab:'添加规则',
@@ -1235,7 +1206,7 @@ var I18N = {
     modal_kw_ph:'关键词1, 关键词2, 关键词3', modal_desc_ph:'描述这条规则禁止/要求什么行为…',
     rule_deleted:'已删除', rule_updated:'已更新', save_failed:'保存失败',
     delete_failed:'删除失败', update_failed:'更新失败', net_error:'网络错误',
-    unknown:'未知', add_failed:'添加失败', no_recent_intercepts:'近30天无拦截记录', theme_light:'☀ 亮色', theme_dark:'🌙 暗色', export_btn:'⬇ 导出', batch_btn:'☐ 批量', select_all:'☐ 全选', deselect_all:'取消全选',
+    unknown:'未知', add_failed:'添加失败',
   },
   en: {
     title:'Canon-Mnemonic-Guard Dashboard', lang:'中文', rules_tab:'Rules', config_tab:'Config', add_tab:'Add Rule',
@@ -1268,7 +1239,7 @@ var I18N = {
     modal_kw_ph:'keyword1, keyword2, keyword3', modal_desc_ph:'Describe what this rule prohibits or requires…',
     rule_deleted:'deleted', rule_updated:'updated', save_failed:'Save failed',
     delete_failed:'Delete failed', update_failed:'Update failed', net_error:'Network error',
-    unknown:'unknown', add_failed:'Add failed', no_recent_intercepts:'No intercepts in 30 days', theme_light:'☀ Light', theme_dark:'🌙 Dark', export_btn:'⬇ Export', batch_btn:'☐ Batch', select_all:'☐ Select All', deselect_all:'Deselect All',
+    unknown:'unknown', add_failed:'Add failed',
   }
 };
 var currentLang = localStorage.getItem('dashboard-lang') || 'zh';
@@ -1362,19 +1333,6 @@ function applyLang() {
   localStorage.setItem('dashboard-lang', currentLang);
 }
 
-function auditI18n() {
-  // Scan for untranslated CJK text in non-data elements
-  document.querySelectorAll('[data-i18n]').forEach(function(el){
-    if (el.dataset.i18nAudited) return;
-    var txt = el.textContent.trim();
-    if (txt && /[\u4e00-\u9fff]/.test(txt) && currentLang === 'en') {
-      el.style.outline = '2px dashed #f85149';
-      el.title = '⚠ Untranslated: ' + el.getAttribute('data-i18n');
-      el.dataset.i18nAudited = '1';
-    }
-  });
-}
-
 function switchLang() {
   currentLang = currentLang === 'zh' ? 'en' : 'zh';
   applyLang();
@@ -1386,16 +1344,13 @@ function renderTrend(d) {
   card.style.display = 'block';
   var maxVal = Math.max.apply(null, d.counts) || 1;
   if (d.counts.every(function(c){return c===0;})) {
-    card.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px">'+t('no_recent_intercepts')+'</div>';
+    card.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px">近30天无拦截记录</div>';
     return;
   }
   var canvas = document.getElementById('trendCanvas');
   var ctx = canvas.getContext('2d');
-  var dpr = window.devicePixelRatio || 1;
   var w = canvas.parentElement.clientWidth - 32;
-  canvas.width = w * dpr; canvas.height = 160 * dpr;
-  canvas.style.width = w + 'px'; canvas.style.height = '160px';
-  ctx.scale(dpr, dpr);
+  canvas.width = w; canvas.height = 160;
   var barW = Math.max(4, (w - 60) / d.days.length - 2);
   ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(40, 140); ctx.lineTo(w - 10, 140); ctx.stroke();
@@ -1429,7 +1384,7 @@ function applyBatchMode(show) {
 }
 function toggleBatchMode() {
   batchMode = !batchMode;
-  document.getElementById('batchToggle').textContent = batchMode ? '☑ '+t('cancel') : t('batch_btn');
+  document.getElementById('batchToggle').textContent = batchMode ? '☑ 取消' : '☐ 批量';
   document.getElementById('batchActions').style.display = batchMode ? 'inline' : 'none';
   if (!batchMode) { selectAllOn = false; selectedIds = {}; document.querySelectorAll('.row-cb').forEach(function(cb){ cb.checked = false; }); }
   applyBatchMode(batchMode);

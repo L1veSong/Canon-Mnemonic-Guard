@@ -303,7 +303,7 @@ def write_soul_activation():
         print("  ⚠️ SOUL.md 不存在，跳过激活标记")
         return False
 
-    marker = "[CMG v5.6.0] 加载 canon-mnemonic-guard 护栏规则\n"
+    marker = "[CMG v5.7.0] 加载 canon-mnemonic-guard 护栏规则\n"
 
     content = SOUL_PATH.read_text()
     if marker.strip() in content:
@@ -413,7 +413,7 @@ def check_cmg_name_conflicts():
 
 
 def main():
-    print_header("CMG 三省引擎 v5.6.0 初始化")
+    print_header("CMG 三省引擎 v5.7.0 初始化")
 
     # Phase 0: Check sub-packages
     missing = check_subpackages()
@@ -480,7 +480,7 @@ def main():
     # Phase 8: SOUL activation
     print_header("⚡ 护栏自动激活")
     print("是否在 SOUL.md 中写入激活标记（一行），让护栏在每次对话自动生效？")
-    print(f"  一行内容: [CMG v5.6.0] 加载 canon-mnemonic-guard 护栏规则")
+    print(f"  一行内容: [CMG v5.7.0] 加载 canon-mnemonic-guard 护栏规则")
     print()
 
     if ask_yn("写入激活标记"):

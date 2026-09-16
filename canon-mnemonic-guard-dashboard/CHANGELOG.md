@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1 (2026-09-16)
+
+### 修复
+- 配置读写 key 与 sentinel 插件命名对齐（此前配置页读写失效）
+- 版本号 / badge 显示与当前版本对齐；配套 skill 扫描列表同步
+
 ## v1.0.0 (2026-05-30)
 
 Initial release of Canon-Mnemonic-Guard Dashboard.

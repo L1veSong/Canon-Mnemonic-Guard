@@ -1,5 +1,40 @@
 # CHANGELOG
 
+## v2.0.2 (2026-09-15) — 契约修复 + 误伤清理（审计驱动）
+
+### 修复
+- **pre_tool_call 双契约错位（三处，全通道此前从未生效）**：①返回值——核心现收 `{"action": "block", "message"}`，旧 `{"block": True, "reason"}` 被静默忽略；②入参——核心以 `args=`/`assistant_response=` 传参，旧代码收 `tool_args=`/`response_text=` 永远为空。两处均已对齐（双命名兼容），实测探针验证。
+- **判定收窄**：skill 写入按 `.hermes/skills/`、`.agents/skills/`、`SKILL.md` 精确匹配（此前"路径含 skill 字样"连 /tmp 都拦）；终端写入门正则同步收窄。
+- **_scan_user_message 误报治理**：新增系统消息前缀豁免（[IMPORTANT/[SYSTEM/cron skill 激活注入）；P1/P3 模式收窄（删"不…了/吧"噪声组合与裸"能不能"）；黑名单移除误伤项 `IMPORTANT The user has invoked`。
+- **path_guard 终端判定收窄**：`2>&1` 等纯重定向不再触发 Desktop/保护路径拦截（验收时自测抓出的误伤，回归用例已入契约测试）。
+- **post_llm_call 死通道处置**：核心不消费返回值（实测确认）→ 改 record-only，不再声称改写输出。
+- **真实语料回扫批次 2**：新建「拿最近真实输出当靶」扫描法（38 条语料一次审出 7 处）；清理 ban_skill_edit_use_right_tool（skill_manage 等裸词——曾吃掉一条验收报告）、禁止自动归档改写铁则库（自动归档裸词）、用户纠错规则（不要再/说清楚等口语片段）、ban_no_backup_before_write（不备份就 收窄为三种具体行为）。违规精确词（如 我瞎编）保留，改写作侧规避引用。
+- **词表批次 1（10 条规则）**：瞎编→我瞎编；规则库/cmg规则→行为短语；密钥/明文→行为短语；restore/golden→绑定 a_rules；changelog/隐私/上传前/发布前/全量检查→行为短语或删除；那边说/里面说→移除；不一致/矛盾/模糊→收窄。备份 rules.bak.09151830。
+- **词表批次 3（工程用语电池，2026-09-16）**：11 处裸词收窄或移除（硬编码/白名单/炒股/越权/wechat/cookie/retina/hotkey/双击/单击/Bearer），保留精确违规复合形态。
+
+## v2.0.1 (2026-09-13) — 热修复
+
+### 修复
+- `_save_escalation` / `_maybe_add_to_blacklist` 缺少 `timezone` 导入 → 纠正识别命中时 `name 'timezone' is not defined`，pre_llm_call 回调中断（escalation/blacklist 不落盘 + 同轮后续子检查全部跳过）。补全 `from datetime import datetime, timezone`。
+
+## v2.0.0 (2026-09-03) — 行为级检测器（gap/lazy/meta 硬拦/注入）
+
+### 新增
+- **行为级规则引擎**：规则文件 frontmatter 新增 `detector` 字段（inject/toolseq/output/path_write），sentinel 仅对声明 detector 的规则做机器执行——配置驱动，新增规则零代码
+- **inject**（pre_llm_call）：行为规则触发词匹配 → 注入修正提示（会话级去重）——覆盖 gap_skip_web_extract/lazy_010/lazy_011/meta_reasonix
+- **toolseq**（pre_llm_call）：任务触发 + 会话工具轨迹缺必需工具 → 流程检查警告——覆盖 gap_007/gap_008/gap_009；pre_tool_call 记录"工具名::关键参数"轨迹（如 skill_view::tdd）
+- **output**（post_llm_call）：回复缺必需格式 → 追加格式提醒（预留，当前无规则启用）
+- **path_write**（pre_tool_call）：写路径命中保护规则 → 硬阻断——覆盖 lazy_012（桌面目录写入）
+- 配置开关 `sentinel.behavior_check`（默认 true）
+- _detect_urls 模板更新：不再强制 web_extract，按站点类型提示（对齐坑点 59）
+
+### 修复
+- 工具轨迹带参存储（_tool_entry），skill_view::xxx 可区分加载了哪个 skill
+
+### 规则覆盖变化
+- 9 条无硬拦规则中 8 条具备机器执行（007/008/009 toolseq，skip_web_extract/lazy_010/lazy_011/meta_reasonix inject，lazy_012 path_write 硬拦）
+- gap_ssr_report 保持 advisory（等待 ssr.report 配置）；gap_ssr_no_limit 属 SSR 程序侧；meta_001 已由哨兵扫描覆盖
+
 ## v1.4.0 (2026-06-14) — 活跃规则注入 + URL 检测 + 改名
 
 ### 新增

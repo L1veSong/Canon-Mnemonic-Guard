@@ -34,16 +34,32 @@ ls -la ~/Desktop/*.zip | awk '{if ($5 < 2000) print "⚠️ 异常小: " $NF}'
 
 ## 完整发布验证流程
 
+**0. 发布范围确认（坑点 47）**
+
+> 2026-06-14 实战：用户说"测试发布"，AI 只做了 sentinel 单插件发布。用户纠正「不是针对plugin是整个skill」。
+> 根因：CMG 是完整生态系统，发布 = 四包制分装（canon/guard/mnemonic/CMG外观）+ 两插件（sentinel/skill-autoload）+ 根文件。
+
+**在打包前必须先确认：**
+- 用户说的是单个组件还是整个生态？
+- 如果是整个生态 → 六组件 + 三根文件全量，不可只发单包（版本号铁律）
+- 不确定 → clarify，不要猜
+
 1. `grep -rn 'v[0-9]\.[0-9]\.[0-9]'` 全文件版本号同步
-2. 隐私扫描（会话细节/API key/个人路径）
-3. 桌面包 vs 已安装逐文件 diff
-4. ZIP 大小检查（不应 < 10KB）
-5. `unzip -l` 验证 ZIP 内容完整性
-6. `unzip -p ... | grep` 验证 ZIP 内关键内容（如新格式）
-7. skill_view 四包全部 available
-8. agent.log 检查 sentinel 拦截记录
-9. 子包 _comment 声明 vs 实际版本号对比
-10. SOUL 激活标记版本匹配
+1.5 **init.py 专项检查（坑点 48）** — `scripts/init.py` 有硬编码版本号（`"2.7.0"`、`"3.5.0"`、`"v5.5.5"`），常规 grep 可能漏过。发布前必须：
+   ```bash
+   grep -E '(canon|guard|mnemonic|CMG).*v?[0-9]\.[0-9]\.[0-9]|version.*[0-9]\.[0-9]\.[0-9]' scripts/init.py
+   ```
+   1. `grep -rn 'v[0-9]\.[0-9]\.[0-9]'` 全文件版本号同步（含 scripts/init.py）
+   2. 隐私扫描（会话细节/API key/个人路径）
+   3. 桌面包 vs 已安装逐文件 diff
+   4. ZIP 大小检查（不应 < 10KB）
+   5. `unzip -l` 验证 ZIP 内容完整性
+   6. `unzip -p ... | grep` 验证 ZIP 内关键内容（如新格式）
+   7. skill_view 四包全部 available
+   8. agent.log 检查 sentinel 拦截记录
+   9. 子包 _comment 声明 vs 实际版本号对比
+   10. SOUL 激活标记版本匹配
+   11. init.py 版本号 grep — 常滞后 2+ 版本（2026-06-14: 2.7.0/3.5.0/5.5.5 全落后）
 
 ## 本次验证结果
 
