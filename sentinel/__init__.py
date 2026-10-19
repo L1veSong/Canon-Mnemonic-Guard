@@ -43,6 +43,19 @@ _SESSION_FLAGS: Dict[str, dict] = {}
 _BLACKLIST_CACHE: Optional[Set[str]] = None
 
 
+def _plugin_version() -> str:
+    """版本号唯一来源：plugin.yaml。避免代码内多处硬编码各自漂移（2026-10-19 实测有三处不一致）。"""
+    try:
+        from pathlib import Path as _P
+        _py = _P(__file__).with_name("plugin.yaml")
+        for _line in _py.read_text(encoding="utf-8").splitlines():
+            if _line.startswith("version:"):
+                return _line.split(":", 1)[1].strip().strip('"').strip("'")
+    except Exception:
+        pass
+    return "unknown"
+
+
 def _load_cmg_config() -> dict:
     global _CONFIG_CACHE
     if _CONFIG_CACHE is not None:
@@ -1609,7 +1622,8 @@ def register(ctx) -> None:
             active.append(hook_name)
 
     logger.info(
-        "[sentinel] v2.1.0 registered (%d ban rules, %d behavior rules, sentinel=%s, step-check=%s, behavior=%s, blacklist=%d, hooks=%s)",
+        "[sentinel] v%s registered (%d ban rules, %d behavior rules, sentinel=%s, step-check=%s, behavior=%s, blacklist=%d, hooks=%s)",
+        _plugin_version(),
         len(rules),
         len(b_rules),
         "ON" if sentinel else "OFF",

@@ -1,5 +1,5 @@
 name: sentinel
-version: 2.0.3
+version: 2.1.1
 description: |
   CMG system-level enforcement plugin. Hard-enforces rules at multiple layers:
   - pre_tool_call: blocks skill-file writes + protected paths (write-aware; v2.0.3 写判定重写 {"action":"block"})

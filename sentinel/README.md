@@ -1,4 +1,4 @@
-# sentinel v2.0.3
+# sentinel v2.1.1
 
 > Hermes 插件：CMG 规则系统级强制拦截。从"事后检查"升级为"事前拦截"——AI 跳步骤 → LLM 调用前直接阻断。v2.0.0 起覆盖 gap/lazy/meta 行为规则。
 
@@ -106,7 +106,7 @@ sentinel:
   behavior_check: true         # 行为级检测器（v2.0.0：gap/lazy/meta）
 ```
 
-安装后重启 Hermes 生效。启动日志中看到 `[sentinel] v2.0.3 registered` 即成功。
+安装后重启 Hermes 生效。启动日志中看到 `[sentinel] v2.1.1 registered` 即成功。
 
 ---
 

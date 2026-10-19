@@ -26,7 +26,7 @@ CMG 是一个**自进化护栏系统**。你用自然语言纠正 AI 的错误�
 
 **Layer 2 — CMG Skill（四包）**：AI 读取规则库，意图识别用户纠正，自动执行三步走（errors.jsonl → rules/ → patterns.json）。
 
-**Layer 3 — sentinel Plugin**：内核级输出拦截 + 步骤完整性检查。v2.0.2（契约适配 + 工具闸门 + 平台自适应）——直接改写 SKILL.md 被内核拦截、断言须附证据、步骤没做完禁止 LLM 回复。
+**Layer 3 — sentinel Plugin**：内核级输出拦截 + 步骤完整性检查。v2.1.1（契约适配 + 工具闸门 + 平台自适应）——直接改写 SKILL.md 被内核拦截、断言须附证据、步骤没做完禁止 LLM 回复。
 
 ### 双层哨兵 + 步骤检查
 
@@ -115,7 +115,7 @@ guard/          v4.8.3   护栏线 — 规则执行器（697→77行精炼版）
 mnemonic/       v3.5.3   忆存线 — 模式识别
 canon-mnemonic-guard/  v5.7.0   外观层 — 四包索引 + 微型调度器 + 四名冲突检测
 skill-autoload/ v1.0.1   Plugin — 自动加载（适配 Hermes ≥v0.14.0）
-sentinel/      v2.0.2   Plugin — 17hooks硬拦截 + 工具闸门 + 平台自适应
+sentinel/      v2.1.1   Plugin — 17hooks硬拦截 + 工具闸门 + 平台自适应
 dashboard/     v1.0.1   Web Dashboard — 规则浏览/配置管理/趋势图 (localhost:8765)
 ```
 
