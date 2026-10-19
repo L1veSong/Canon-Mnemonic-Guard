@@ -1,4 +1,4 @@
-# sentinel v2.0.2
+# sentinel v2.0.3
 
 > Hermes 插件：CMG 规则系统级强制拦截。从"事后检查"升级为"事前拦截"——AI 跳步骤 → LLM 调用前直接阻断。v2.0.0 起覆盖 gap/lazy/meta 行为规则。
 
@@ -106,7 +106,7 @@ sentinel:
   behavior_check: true         # 行为级检测器（v2.0.0：gap/lazy/meta）
 ```
 
-安装后重启 Hermes 生效。启动日志中看到 `[sentinel] v2.0.2 registered` 即成功。
+安装后重启 Hermes 生效。启动日志中看到 `[sentinel] v2.0.3 registered` 即成功。
 
 ---
 
@@ -183,6 +183,7 @@ sentinel/
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v2.0.3 | 2026-09-20 | 审计修复：终端写判定重写（2>&1/跨段误拦，契约补 5 例）；平台检测补认 HERMES_DESKTOP（桌面输出替换收敛）；词表实锤 11 处清理；补 3 条 correction_template |
 | v2.0.2 | 2026-09-15 | 契约修复：pre_tool_call 迁移 `{"action":"block"}`（此前全通道失效）；post_llm_call 改 record-only；词表批次1（10 规则）；系统消息豁免 |
 | v2.0.1 | 2026-09-13 | 热修复：`timezone` import 缺失（_save_escalation/_maybe_add_to_blacklist NameError） |
 | v2.0.0 | 2026-09-03 | 行为级检测器：inject/toolseq/output/path_write，gap/lazy/meta 机器执行 |

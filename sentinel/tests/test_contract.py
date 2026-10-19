@@ -49,6 +49,21 @@ def main():
     check("path_guard 拦桌面写入命令", isinstance(g, dict) and g.get("action") == "block")
     check("旧位置参数形态兼容", m._pre_tool_call("write_file", {"path": "/tmp/legacy.txt"}) is None)
 
+    # 1.5) v2.0.3 回归（2026-09-20 审计修复）: 终端 skill 写入门 + 平台检测
+    check("skill门放行: 2>&1 + 后段 skill 路径", m._is_skill_write_via_terminal("echo probe 2>&1; ls -d ~/.hermes/skills/software-development/cmg-audit") is False)
+    check("skill门放行: cron 实况（2>&1 组合）", m._is_skill_write_via_terminal('echo "UUMIT_SKILL_DIR=$UUMIT_SKILL_DIR"; ls -d ~/.hermes/skills/uumit-agent ~/.hermes/skills/uumit-cruise 2>&1; node ~/.hermes/skills/uumit-cruise/scripts/cruise.js market-run 2>&1') is False)
+    check("skill门放行: used 字样只读命令", m._is_skill_write_via_terminal("grep used ~/.hermes/skills/a/b.md") is False)
+    check("skill门放行: /dev/null 重定向", m._is_skill_write_via_terminal("ls 2>/dev/null ~/.hermes/skills/a") is False)
+    check("skill门拦截: 重定向写入", m._is_skill_write_via_terminal("echo x > ~/.hermes/skills/a/b.md") is True)
+    check("skill门拦截: sed 就地修改", m._is_skill_write_via_terminal("sed -i s/a/b/ ~/.hermes/skills/a/b.md") is True)
+    _saved = {k: os.environ.pop(k, None) for k in ("HERMES_PLATFORM", "HERMES_CLI_PLATFORM", "HERMES_DESKTOP_CHILD_PID", "ELECTRON_RUN_AS_NODE")}
+    os.environ["HERMES_DESKTOP"] = "1"
+    check("平台: HERMES_DESKTOP → desktop", m._detect_platform() == "desktop")
+    del os.environ["HERMES_DESKTOP"]
+    for k, v in _saved.items():
+        if v is not None:
+            os.environ[k] = v
+
     # 2) 纠错检测器
     check("IMPORTANT 系统消息豁免", m._scan_user_message('[IMPORTANT: The user has invoked the "x" skill]') is None)
     check("普通提问不触发", m._scan_user_message("我觉得意义不大吧，你测一下") is None)

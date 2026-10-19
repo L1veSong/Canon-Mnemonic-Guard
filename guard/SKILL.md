@@ -34,9 +34,9 @@ metadata:
 
 > **注意**：SkillLoad 和 Clarify 需要语义理解，正则做不到，只能在 Skill 层引导。其余三层 cmg-guard 插件全包。
 
-## cmg-guard 插件（Hermes 专属）
+## sentinel 插件（Hermes 专属；旧名 `cmg-guard`）
 
-配套插件 `cmg-guard` 提供内核级硬拦截，AI 无法跳过：
+配套插件 `sentinel`（旧名 `cmg-guard`）提供内核级硬拦截，AI 无法跳过：
 
 | Hook | 检查内容 |
 |------|---------|
@@ -71,6 +71,7 @@ python3 ~/.hermes/skills/software-development/canon-mnemonic-guard/scripts/init.
 5. **Skill 层规则不是硬拦截** — 非 Hermes 平台上 Guard 完全靠 AI 自觉。要强制必须用 Plugin。
 6. **cmg-guard 插件在非 CLI 平台需特殊配置** — Desktop/Web/API 没有 AI 自我修正循环，`transform_llm_output`/`pre_llm_call`/`post_llm_call` 三个钩子会导致输出死锁。Desktop 端必须关掉这三项，只保留 `pre_tool_call: true`。详见 CMG 外观层 `references/desktop-compatibility.md`。
 7. **cmg-guard 代码变更后必须重启验证** — 不能凭感觉说「应该生效了」。需逐项 `grep` agent.log + 统计规则数 + 确认钩子配置。详见 CMG 外观层 `references/desktop-compatibility.md` 的「重启验证清单」。
+8. **只读命令也会被 pre_tool_call 误拦** — 判据是「命令串里有没有 `SKILL.md`」，不是「有没有写操作」。`grep <path>/SKILL.md`、`cat`、`sed -n '1,20p'` 这类纯读命令一样被阻断并返回 `[CMG-GATE] 禁止通过终端写入 skill 文件`。**正确应对：改用 `read_file` / `search_files` 工具读，不要在终端换写法重试**（重试只会再撞一次）。要读第三方包内的文件同理——用 read_file 而不是 shell。
 
 ## 参考文件
 

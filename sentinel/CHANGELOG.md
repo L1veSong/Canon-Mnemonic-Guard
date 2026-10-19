@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v2.0.3 (2026-09-20) — 审计修复热更（终端门 + 平台检测 + 词表）
+
+### 修复
+- **skill 写入门误拦只读命令（2026-09-19 实锤 3 例：巡航 cron / 审计会话 / 受控探针）**：`_is_skill_write_via_terminal` 重写——排除 `2>&1`/`>&`/`2>/dev/null` 类 fd 重定向与 `->`/`=>` 箭头；sed/tee 须为独立命令词；skill 路径须落在写操作点后 300 字符内（与 path_guard 判定对齐）。
+- **桌面平台误判为 cli**：`_detect_platform` 补认 `HERMES_DESKTOP`（Electron 桌面后端只设此变量）→ 输出替换类钩子在桌面按设计关闭（实锤：2026-09-19 桌面会话发生多起误伤替换）。
+- **词表实锤清理（11 处关键词）**：联网 / API key / api_key / hf_ / AppleScript / 直接关掉 / 只改一个 / 重名 / 改前备份 / 写前备份 / 开头——依真实语料回扫 + 拦截日志实锤删除（后两者属"正确行为表述反噬"）。备份 `rules.bak.09200018`。违规精确词与真串式（sk- 等）保留。
+- **补 3 条 hard 规则 correction_template**：ban_assume_tool_installed / rule_ban_no_del_a_rules / rule_gap_ssr_no_limit（check-frontmatter 恢复全绿）。
+- **重建 _index.md**（修复 3 行 level 陈旧显示）。
+
+### 验证
+- 契约测试 32/32（新增 6 例）；yaml 全库 63/63；真实语料回扫 0 命中；只读+重定向探针实测放行。
+- 生效条件：本版 Hermes（0.21.x 桌面实测）每回合重载插件与词表——改完下一回合自动生效，无需重启；同回合内仍是旧模块，验证以活体探针为准。
+
 ## v2.0.2 (2026-09-15) — 契约修复 + 误伤清理（审计驱动）
 
 ### 修复

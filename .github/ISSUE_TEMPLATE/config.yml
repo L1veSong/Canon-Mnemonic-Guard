@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 讨论 · Discussion
+    url: https://github.com/L1veSong/hermes-idea-foundry/discussions
+    about: 使用问题、经验分享、一般性讨论
+  - name: 📖 文档 · Documentation
+    url: https://github.com/L1veSong/hermes-idea-foundry#readme
+    about: 查看 README 了解使用方法和配置

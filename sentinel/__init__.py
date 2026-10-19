@@ -1,5 +1,5 @@
 """
-sentinel v2.0.2: pre_tool_call 契约双修 + 工具闸门落地（SKILL.md 写入门 / 终端写入门 / 桌面保护）+ 判定收窄 + 词表维护。
+sentinel v2.1.1: 语义闸门接线（对客/落地先判后放） + 错因层（判定按「错了什么事」）+ v2.0.3 审计修复（桌面识别/终端写判定）沿用 v2.0.2 契约双修 + 工具闸门落地（SKILL.md 写入门 / 终端写入门 / 桌面保护）+ 判定收窄 + 词表维护。
 
 v1.4.0: + _inject_active_rules (CLI+GUI: 按任务匹配 5-10 条最相关 ban 规则注入上下文)
         + _detect_urls (CLI+GUI: 检测用户消息中的 URL，提示使用 web_extract)
@@ -97,6 +97,10 @@ def _detect_platform() -> str:
                 return val.lower()
         if os.environ.get("HERMES_DESKTOP_CHILD_PID"):
             return "desktop"
+        if os.environ.get("HERMES_DESKTOP"):
+            # v2.0.3: Electron 桌面后端只设 HERMES_DESKTOP=1（无 CHILD_PID）。
+            # 此前检不到 → 回落 "cli" → 输出替换类钩子在桌面误开（2026-09-19 审计实锤）。
+            return "desktop"
         if os.environ.get("ELECTRON_RUN_AS_NODE"):
             return "desktop"
         return "cli"
@@ -130,6 +134,154 @@ def _behavior_check_enabled() -> bool:
     if "behavior_check" not in cfg:
         return True
     return bool(cfg["behavior_check"])
+
+
+# ── v2.1.0: 错因层（判定对象是「错了什么事」，不是「说了什么词」） ──────────
+
+ERROR_TAXONOMY = (
+    "[CMG 错因层] 判定按「错了什么事」，不按「说了什么词」。用词本身无罪；\n"
+    "  只有用户明确点名「不能说这个词」时才存在词级禁令。\n"
+    "  E1 假完成＝说做完/改好/没问题，实际没做完或没验证就下断言\n"
+    "  E2 假核验＝说已读/看完/核对过，实际没读或只看局部\n"
+    "  E3 推测当事实＝拿印象/常识/上次经验/标题/语气当结论依据\n"
+    "  E4 偷工跳步不说明＝跳过步骤或省掉检查而不声明\n"
+    "  E5 编造数据＝给出未实测的数字/结果/外部事实\n"
+    "  如实说明没做/没取到、只报状态、引用原文、自我提醒 → 不算错。"
+)
+ERROR_LOG = os.path.expanduser("~/.hermes/self-reflection/cmg-error-log.jsonl")
+
+
+def _semantic_taxonomy_enabled() -> bool:
+    cfg = _load_cmg_config()
+    if "semantic_taxonomy" not in cfg:
+        return True
+    return bool(cfg["semantic_taxonomy"])
+
+
+def _taxonomy_reminder() -> Optional[str]:
+    """注入错因层提醒 + 同类错因计数（同一个错不犯第二遍）。"""
+    if not _semantic_taxonomy_enabled():
+        return None
+    tail = ""
+    try:
+        if os.path.exists(ERROR_LOG):
+            counts: Dict[str, int] = {}
+            with open(ERROR_LOG, encoding="utf-8") as f:
+                for line in f.readlines()[-200:]:
+                    try:
+                        t = json.loads(line).get("类型") or json.loads(line).get("type")
+                    except Exception:
+                        continue
+                    if t:
+                        counts[t] = counts.get(t, 0) + 1
+            if counts:
+                rank = sorted(counts.items(), key=lambda kv: -kv[1])[:3]
+                tail = "\n  同类错因计数：" + "，".join(f"{k}×{v}" for k, v in rank) + "（第二次即为重犯）"
+    except Exception:
+        tail = ""
+    return ERROR_TAXONOMY + tail
+
+
+def _semantic_judge(text: str, timeout: int = 8) -> Optional[Tuple[str, float]]:
+    """调用语义闸门脚本判 是否错 + 错因类型。fail-open：异常一律返回 None（不拦）。"""
+    try:
+        import subprocess
+        import sys
+        script = os.path.expanduser("~/.hermes/scripts/cmg-semantic-gate.py")
+        if not os.path.exists(script):
+            return None
+        r = subprocess.run([sys.executable or "python3", script, "--整篇", "--文本", text],
+                           capture_output=True, text=True, timeout=timeout)
+        out = (r.stdout or "").strip()
+        if not out:
+            return None
+        # 脚本以 "--文本" 模式对逐句判定，无命中时输出 PASS
+        if out.startswith("PASS"):
+            return None
+        return ("BLOCK", 0.0)
+    except Exception:
+        return None
+
+
+# ── v2.1.0: 语义闸门取文本（只挑「会对客/会落地」的调用，普通文件操作不拖进判定）──
+
+_SEM_GATE_PATH_KEYS = ("草稿", "回复", "对客", "客户", "报告", "方案", "清单", "发送")
+# 内部目录一律不判：这些不是对客产物，判它们只会白烧桥（2026-09-24 卡死事故）
+_SEM_GATE_EXCLUDE_RE = re.compile(r"/判级/|/工具/|/桥/|/认证/|/素材/|/产品目录/|/self-reflection/|/.hermes/")
+_SEM_GATE_BUSY = False
+_SEM_GATE_SEND_RE = re.compile(r"发送-|send_|-发送|邮件|gmail|outlook", re.IGNORECASE)
+SEM_GATE_OBS = os.path.expanduser("~/.hermes/self-reflection/cmg-gate-observed.jsonl")
+
+
+def _semantic_gate_enabled() -> bool:
+    cfg = _load_cmg_config()
+    return bool(cfg.get("semantic_gate", True))
+
+
+def _semantic_payload(tool_name: str, args: dict):
+    """返回需要判定的文本；不属于「对客/落地」场景则返回 None。"""
+    try:
+        if tool_name in ("write_file", "patch"):
+            path = str(args.get("path", ""))
+            content = str(args.get("content") or args.get("new_string") or "")
+        elif tool_name == "terminal":
+            cmd = str(args.get("command", ""))
+            if not _SEM_GATE_SEND_RE.search(cmd):
+                return None
+            path, content = cmd, cmd
+        else:
+            return None
+        if _SEM_GATE_EXCLUDE_RE.search(path):
+            return None
+        if not any(k in path for k in _SEM_GATE_PATH_KEYS):
+            return None
+        if not (40 <= len(content) <= 4000):
+            return None
+        return content
+    except Exception:
+        return None
+
+
+def _semantic_gate_block(tool_name: str, payload: str):
+    """命中即拦该次工具调用；任何异常 → None（fail-open，不拦）。
+
+    2026-09-24 卡死事故后：①单飞——同一时刻只允许一个判定，避免并发排队把宿主钩子拖死；
+    ②超时 45s → 12s（脚本侧另有 18s 总预算）。
+    """
+    global _SEM_GATE_BUSY
+    if _SEM_GATE_BUSY:
+        return None
+    _SEM_GATE_BUSY = True
+    try:
+        script = os.path.expanduser("~/.hermes/scripts/cmg-semantic-gate.py")
+        if not os.path.exists(script):
+            return None
+        import subprocess
+        import sys
+        r = subprocess.run([sys.executable or "python3", script, "--整篇", "--文本", payload],
+                           capture_output=True, text=True, timeout=12)
+        out = (r.stdout or "").strip()
+        if not out or out.startswith("PASS"):
+            return None
+        parts = out.split()
+        try:
+            with open(SEM_GATE_OBS, "a", encoding="utf-8") as f:
+                f.write(json.dumps({
+                    "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    "工具": tool_name, "判定": out, "类型": parts[1] if len(parts) > 1 else "?",
+                    "文本": payload[:300]}, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+        return {
+            "action": "block",
+            "message": ("[CMG-GATE 错因] 这次调用的文本被判为「错的事」(" + out + ")。"
+                        "先把说法改成有证据的形式——做了什么、没做什么、依据在哪——再重试。"
+                        "确属误判：在 config.yaml 的 sentinel 段加 semantic_gate: false 即可关。"),
+        }
+    except Exception:
+        return None
+    finally:
+        _SEM_GATE_BUSY = False
 
 
 def _log_intercept(rule_id: str, reason: str, action: str = "block") -> None:
@@ -1171,6 +1323,11 @@ def _pre_llm_call(user_message: str = "", session_id: str = "", **kwargs) -> Opt
     if toolseq_ctx:
         contexts.append(toolseq_ctx)
 
+    # v2.1.0: 错因层提醒（ALL platforms — context only，不参与拦截）
+    tax_ctx = _taxonomy_reminder()
+    if tax_ctx:
+        contexts.append(tax_ctx)
+
     # Step completeness check (CLI only)
     if is_cli:
         step_fail = _check_step_completeness(user_message)
@@ -1369,6 +1526,16 @@ def _pre_tool_call(tool_name: str = "", tool_args: Optional[dict] = None, sessio
                 "message": "[CMG-GATE] 禁止通过终端写入 skill 文件。请使用 skill_manage(action='create'|'patch') 操作 skill。",
             }
 
+    # ── v2.1.0: 语义闸门（错因层）—— 对客/落地调用先判后放 ────────────
+    if _semantic_gate_enabled():
+        _payload = _semantic_payload(tool_name, tool_args or {})
+        if _payload:
+            _hit = _semantic_gate_block(tool_name, _payload)
+            if _hit:
+                logger.warning("[sentinel] semantic gate blocked: %s", tool_name)
+                _log_intercept("semantic_gate", f"{tool_name}: {_payload[:80]}")
+                return _hit
+
     # ── v2.0.0: behavior path guard (path_write detectors) ────────────
     guard = _behavior_path_guard(tool_name, tool_args)
     if guard:
@@ -1379,12 +1546,26 @@ def _pre_tool_call(tool_name: str = "", tool_args: Optional[dict] = None, sessio
 
 
 def _is_skill_write_via_terminal(cmd: str) -> bool:
-    """Check if a terminal command writes to a skill file path."""
-    skill_pattern = re.compile(
-        r"(sed|tee|>>|>)\s*.*?(\.hermes/skills/|\.agents/skills/|skill\.md)",
+    """Check if a terminal command writes to a skill file path.
+
+    v2.0.3（2026-09-20 审计实锤重写）:
+    - 排除 `2>&1` / `>&` 纯 fd 重定向（旧正则把只读命令+重定向整体误拦）
+    - 排除 `->` / `=>` 箭头；sed/tee 必须是独立命令词
+    - skill 路径必须落在写操作点后 300 字符内（旧正则 `.*?` 可跨整条命令拼配）
+    """
+    if not cmd:
+        return False
+    path_re = re.compile(r"\.hermes/skills/|\.agents/skills/|skill\.md", re.IGNORECASE)
+    op_re = re.compile(
+        r"(?<![\w.])(?:write_file|patch)\s*\("
+        r"|(?:^|[\s;|&(])(?:sed|tee)(?=[\s;|&>]|$)"
+        r"|(?<![-=])>{1,2}(?![&]|[ \t]*/dev/null)",
         re.IGNORECASE,
     )
-    return bool(skill_pattern.search(cmd))
+    for m in op_re.finditer(cmd):
+        if path_re.search(cmd[m.start(): m.start() + 300]):
+            return True
+    return False
 
 
 # ===========================================================================
@@ -1428,7 +1609,7 @@ def register(ctx) -> None:
             active.append(hook_name)
 
     logger.info(
-        "[sentinel] v2.0.2 registered (%d ban rules, %d behavior rules, sentinel=%s, step-check=%s, behavior=%s, blacklist=%d, hooks=%s)",
+        "[sentinel] v2.1.0 registered (%d ban rules, %d behavior rules, sentinel=%s, step-check=%s, behavior=%s, blacklist=%d, hooks=%s)",
         len(rules),
         len(b_rules),
         "ON" if sentinel else "OFF",

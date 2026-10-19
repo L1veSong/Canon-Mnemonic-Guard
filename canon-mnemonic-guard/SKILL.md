@@ -1,10 +1,10 @@
 ---
 name: canon-mnemonic-guard
-description: 三省引擎 (CMG) — 取自「吾日三省吾身」。v5.7.0 + Dashboard v1.0.1 + Guard v4.8.3 + sentinel v2.0.2。三条核心线(Canon/Guard/Mnemonic) + 一条外观(CMG) + 两个插件(sentinel硬拦截/skill-autoload自启动)。对外 role:guard stage:pre_action。
+description: 三省引擎 (CMG) — 取自「吾日三省吾身」。v5.7.0 + Dashboard v1.0.1 + Guard v4.8.3 + sentinel v2.0.3。三条核心线(Canon/Guard/Mnemonic) + 一条外观(CMG) + 两个插件(sentinel硬拦截/skill-autoload自启动)。对外 role:guard stage:pre_action。
 version: 5.7.0
 role: guard
 dependencies: [canon, guard, mnemonic]
-_comment: "v5.7.0 + Dashboard v1.0.1。sentinel v2.0.2(契约修复+工具闸门+平台自适应)。Canon v2.7.2 + Guard v4.8.3 + Mnemonic v3.5.3。skill-autoload v1.0.1。三条核心线(Canon/Guard/Mnemonic) + 一条外观(CMG) + 两个插件(sentinel/skill-autoload)。"
+_comment: "v5.7.0 + Dashboard v1.0.1。sentinel v2.0.3(契约修复+工具闸门+平台自适应)。Canon v2.7.2 + Guard v4.8.3 + Mnemonic v3.5.3。skill-autoload v1.0.1。三条核心线(Canon/Guard/Mnemonic) + 一条外观(CMG) + 两个插件(sentinel/skill-autoload)。"
 min_hermes_version: any
 platforms: [linux, macos, windows]
 author: L1veSong
@@ -16,6 +16,11 @@ metadata:
 ---
 
 # 三省引擎 (CMG) v5.7.0
+
+> **⚠️ 2026-10-19 状态变更：SSR（智配路由）插件已从本机删除。**
+> 本文档中所有 SSR 段落（坑点 31 / 42 / 43 / 44、配套 Skill 表、`references/ssr-*.md`、`scripts/ssr-green-benchmark.py`）均为**历史记录**，描述的组件已不存在，不得当作当前配置依据，也不得据此建议启停 SSR。
+> 删除依据（gateway.log，2026-10-07~10-19）：每次启动索引 875 个 SKILL.md，12 天注册 414 次；`2026-10-19 11:21:53 load timed out after 60s` 直接拖垮 Gateway；335 次推荐只有 9 种不同结果，228 次撞 60 条上限；`LLM 筛查 HTTP 401` 286 次、`Ollama 预热跳过` 412 次。
+> 源码存档：GitHub `L1veSong/Smart-Skill-Router-Plugin`。`main` = v3.0.2（常规版，278 条规则，含 dot 目录排除 + NO_PROXY 两个修复）；`youhong-v3.0.1` 分支 = you-hong profile 旧快照（v3.0.1，302 条，缺上述修复）。**不存在外贸业务定制版**——两分支代码差异仅 30 行，属版本漂移。
 
 > **对外身份**: guard (护栏) | **阶段**: pre_action | **中文名**: 三省引擎，取自「吾日三省吾身」
 
@@ -31,7 +36,7 @@ metadata:
   CMG v5.7.0               → 统一引擎。四包制分装 + Dashboard + 诊断/协调。
 
 两个插件 (Plugin 层)：
-  sentinel v2.0.2         → 硬拦截层。17个Hook，只覆盖 ban 关键词（52 条 + 行为级 detector）。
+  sentinel v2.0.3         → 硬拦截层。17个Hook，只覆盖 ban 关键词（52 条 + 行为级 detector）。
   skill-autoload v1.0.1    → 自启动层。pre_llm_call 自动注入 CMG 加载指令。
 
 配套工具：
@@ -40,7 +45,7 @@ metadata:
 规则执行双层模型：
   自觉层 → Guard 核心线 → AI 读 SKILL.md → 63 条全量（52ban+6gap+3lazy+2meta）
   硬拦层 → sentinel 插件 → Hook 关键词扫描 → 52 条 ban 关键词 + 行为级 detector
-  缺口   → 6 条 gap/lazy/meta 由 sentinel v2.0.2 detector 软注入，仅 gap_ssr_report 待 ssr.report 配置
+  缺口   → 6 条 gap/lazy/meta 由 sentinel v2.0.3 detector 软注入，仅 gap_ssr_report 待 ssr.report 配置
 
 > **行为分级执行模型（2026-09-07 澄清，未升版）：**
 > 规则 frontmatter `level` 字段分三级：
