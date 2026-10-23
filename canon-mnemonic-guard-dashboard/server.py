@@ -204,7 +204,7 @@ def read_intercept_trend():
     ilog = os.path.join(SR, 'intercept_log.jsonl')
     if not os.path.exists(ilog):
         return {'days': [], 'counts': [], 'total': 0}
-    now = _dt.datetime.now(_dt.timezone.utc)
+    now = _dt.datetime.now()  # ts 为本地 naive 时间，用本地 now 比较（修复：此前 utc-aware vs naive 相减抛异常，趋势恒为空）
     counts = defaultdict(int)
     total = 0
     with open(ilog) as f:
@@ -213,9 +213,11 @@ def read_intercept_trend():
             if not line: continue
             try:
                 entry = json.loads(line)
-                ts = entry.get('timestamp', '')
+                ts = entry.get('ts') or entry.get('timestamp', '')
                 if ts:
                     dt = _dt.datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                    if dt.tzinfo is not None:
+                        dt = dt.astimezone().replace(tzinfo=None)
                     days_ago = (now - dt).days
                     if 0 <= days_ago < 30: counts[days_ago] += 1
                 total += 1
@@ -1512,7 +1514,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
 
         if path == '/':
-            self._serve_html(DASHBOARD_HTML())
+            self._serve_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'index.html'))
         elif path == '/api/rules':
             self._serve_json(read_rules())
         elif path == '/api/stats':
@@ -1551,6 +1553,19 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                 self._serve_json({'ok': False, 'error': str(e)})
         else:
             self.send_error(404)
+
+    def _serve_file(self, path):
+        """静态文件服务（index.html）。文件缺失时回退到内嵌 DASHBOARD_HTML（2026-09-20）。"""
+        try:
+            with open(path, 'rb') as f:
+                content = f.read()
+        except FileNotFoundError:
+            self._serve_html(DASHBOARD_HTML())
+            return
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(content)
 
     def _serve_html(self, html):
         self.send_response(200)

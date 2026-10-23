@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三省引擎 · Dashboard</title>
+<style>
+/* ═════════════════════════════════════════════════════════
+   三省引擎 (Canon-Mnemonic-Guard) Dashboard
+   warm-dark / blue accent / system fonts — 与智配路由同套设计语言
+   ═════════════════════════════════════════════════════════ */
+:root{
+  --page:#1B1B1D; --panel:#232326; --panel-2:#2B2B2F; --panel-3:#333338;
+  --border:rgba(255,255,255,.07); --border-2:rgba(255,255,255,.14);
+  --ink-1:#F5F5F7; --ink-2:#A9A9B0; --ink-3:#72727A;
+  --accent:#3B82F6; --accent-strong:#2F6FE0; --accent-soft:rgba(59,130,246,.14);
+  --on-accent:#FFFFFF;
+  --green:#30D158; --red:#FF453A; --amber:#D4A843; --teal:#2DD4BF;
+  --r:10px; --r-sm:7px; --r-lg:14px;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  --shadow:0 1px 2px rgba(0,0,0,.32);
+  --shadow-lg:0 24px 60px -24px rgba(0,0,0,.65);
+}
+body[data-theme="light"]{
+  --page:#F4F2EC; --panel:#FFFFFF; --panel-2:#F8F6F1; --panel-3:#EFEDE6;
+  --border:rgba(32,28,18,.09); --border-2:rgba(32,28,18,.18);
+  --ink-1:#232323; --ink-2:#5C5A54; --ink-3:#918E85;
+  --accent:#2563EB; --accent-strong:#1D4ED8; --accent-soft:rgba(37,99,235,.10);
+  --green:#16A34A; --red:#DC2626; --amber:#B45309; --teal:#0D9488;
+  --shadow:0 1px 2px rgba(70,60,35,.10);
+  --shadow-lg:0 24px 60px -28px rgba(70,60,35,.35);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{background:var(--page);color:var(--ink-1);font-family:var(--font);font-size:13px;line-height:1.5;min-height:100dvh}
+::selection{background:var(--accent-soft)}
+.page{max-width:1320px;margin:0 auto;padding:0 32px 72px}
+
+/* ── Header ── */
+header{display:flex;align-items:center;gap:16px;padding:20px 0 16px}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand h1{font-size:17px;font-weight:650;letter-spacing:-.2px}
+.brand .sub{font-size:11px;color:var(--ink-3);font-family:var(--mono)}
+.ver{font-size:10.5px;font-family:var(--mono);color:var(--ink-3);border:1px solid var(--border);border-radius:99px;padding:1px 8px;position:relative;top:-1px}
+.head-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.clock{font-family:var(--mono);font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.iconbtn{border:1px solid var(--border);background:transparent;color:var(--ink-2);font-size:11.5px;font-weight:500;font-family:var(--font);padding:4px 11px;border-radius:99px;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.iconbtn:hover{background:var(--panel-2);color:var(--ink-1);border-color:var(--border-2)}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:26px;border-bottom:1px solid var(--border);margin-bottom:26px}
+.tab{background:none;border:none;cursor:pointer;position:relative;font-size:13.5px;font-weight:550;color:var(--ink-3);padding:0 2px 11px;font-family:var(--font);transition:color .15s}
+.tab:hover{color:var(--ink-2)}
+.tab.active{color:var(--ink-1)}
+.tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);border-radius:2px 2px 0 0}
+.tab-content{display:none;animation:fadeUp .22s ease-out both}
+.tab-content.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── Stats ── */
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;transition:border-color .15s;box-shadow:var(--shadow)}
+.stat:hover{border-color:var(--border-2)}
+.stat .k{font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;white-space:nowrap}
+.stat .v{font-size:24px;font-weight:640;letter-spacing:-.5px;font-family:var(--mono);font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .v.alert{color:var(--red)}
+.stat .v.warnc{color:var(--amber)}
+.stat .s{font-size:10.5px;color:var(--ink-3);margin-top:5px;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Trend ── */
+.trend{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:20px;box-shadow:var(--shadow)}
+.trend .t-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.trend .t-title{font-size:12px;font-weight:650;color:var(--ink-1)}
+.trend .t-sub{font-size:11px;color:var(--ink-3);font-family:var(--mono)}
+.trend .t-empty{padding:20px 0;text-align:center;color:var(--ink-3);font-size:12px}
+.trend canvas{display:block;width:100%}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.searchbox{position:relative;flex:1;max-width:380px}
+.searchbox svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.45;color:var(--ink-3)}
+.searchbox input{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--ink-1);padding:8px 12px 8px 34px;border-radius:var(--r-sm);font-size:13px;font-family:var(--font);transition:border-color .15s,box-shadow .15s}
+.searchbox input::placeholder{color:var(--ink-3)}
+.searchbox input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.toolbar select{background:var(--panel);border:1px solid var(--border);color:var(--ink-2);padding:8px 10px;border-radius:var(--r-sm);font-size:12.5px;font-family:var(--font);cursor:pointer}
+.toolbar select:focus{outline:none;border-color:var(--accent)}
+.toolbar .count{margin-left:auto;font-size:12px;color:var(--ink-3);font-family:var(--mono)}
+#batchActions{display:none;align-items:center;gap:8px}
+#batchActions.on{display:flex}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);border:1px solid var(--border-2);background:var(--panel-2);color:var(--ink-1);cursor:pointer;font-size:12.5px;font-weight:550;font-family:var(--font);transition:background .15s,border-color .15s,transform .06s;white-space:nowrap}
+.btn:hover{background:var(--panel-3)}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn-primary:hover{background:var(--accent-strong);border-color:var(--accent-strong)}
+.btn-danger{color:var(--red);border-color:rgba(255,69,58,.25);background:transparent}
+.btn-danger:hover{background:rgba(255,69,58,.08);border-color:rgba(255,69,58,.4)}
+.btn-sm{padding:4px 10px;font-size:11.5px;border-radius:6px}
+
+/* ── Table ── */
+.tablewrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);overflow:auto;max-height:620px;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead{position:sticky;top:0;z-index:2;background:var(--panel)}
+th{text-align:left;font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink-2)}
+th.sort-asc::after,th.sort-desc::after{content:'▴';display:inline-block;width:14px;margin-left:4px;font-size:12px;transition:transform .2s}
+th.sort-desc::after{transform:rotate(180deg)}
+td{padding:8px 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--ink-2);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr.clickable{cursor:pointer;transition:background .12s}
+tbody tr.clickable:hover{background:var(--panel-2)}
+td.id{font-family:var(--mono);font-size:12px;color:var(--ink-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.n.hot{color:var(--red);font-weight:600}
+td.dim{color:var(--ink-3);font-family:var(--mono);font-size:11.5px}
+td.stale span{color:var(--ink-3);font-style:italic}
+.type-badge{display:inline-block;padding:1.5px 8px;border-radius:99px;font-size:10.5px;font-weight:600;font-family:var(--mono)}
+.type-ban{background:rgba(255,69,58,.13);color:var(--red)}
+.type-gap{background:rgba(212,168,67,.14);color:var(--amber)}
+.type-lazy{background:var(--accent-soft);color:var(--accent)}
+.type-meta{background:rgba(45,212,191,.13);color:var(--teal)}
+.kwcell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-3);font-size:11.5px}
+.kw{display:inline-block;background:var(--panel-2);border:1px solid var(--border);padding:0 6px;border-radius:4px;font-size:10.5px;font-family:var(--mono);margin:1px 3px 1px 0;color:var(--ink-2)}
+.detail-row{display:none}
+.detail-row.open{display:table-row}
+.detail-row td{background:var(--panel-2);padding:12px 18px;font-size:12px;border-bottom:1px solid var(--border)}
+.detail-row .dl{font-size:10px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.cbcol{width:44px;text-align:center;padding:8px 6px !important}
+.row-acts{opacity:0;transition:opacity .12s;white-space:nowrap;text-align:right;width:96px}
+tbody tr:hover .row-acts{opacity:1}
+.row-cb{display:none;cursor:pointer;accent-color:var(--accent)}
+body.batch .row-cb{display:inline-block}
+body.batch .del-inline{display:none}
+.del-inline{display:inline-block;width:20px;height:20px;line-height:18px;text-align:center;border-radius:4px;border:1px solid transparent;background:transparent;color:var(--ink-3);font-size:12px;cursor:pointer;font-family:var(--font);padding:0;vertical-align:middle}
+.del-inline:hover{color:#fff;background:var(--red);border-color:var(--red)}
+
+/* ── Config ── */
+.config-grid{display:grid;grid-template-columns:repeat(2,minmax(340px,1fr));gap:14px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);transition:border-color .15s}
+.card:hover{border-color:var(--border-2)}
+.card h3{font-size:12px;font-weight:650;letter-spacing:.04em;display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--ink-1)}
+.card h3 .tag{font-size:10px;font-weight:500;color:var(--ink-3);font-family:var(--mono);border:1px solid var(--border);border-radius:99px;padding:1px 7px}
+.hook-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--ink-2)}
+.hook-row:last-child{border-bottom:none}
+.hook-row .name{font-family:var(--mono);font-size:11.5px;color:var(--ink-2)}
+.hook-row .desc{font-size:11px;color:var(--ink-3);margin-top:1px;font-family:var(--font)}
+.save-row{margin-top:14px;display:flex;align-items:center;gap:10px;justify-content:flex-end}
+.dirty{font-size:11px;color:var(--amber);display:none}
+.dirty.show{display:inline}
+.switch{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.slider{position:absolute;cursor:pointer;inset:0;border-radius:20px;background:var(--panel-3);border:1px solid var(--border-2);transition:background .2s,border-color .2s}
+.slider::before{content:"";position:absolute;height:14px;width:14px;left:2px;top:2px;background:#fff;border-radius:50%;transition:transform .22s cubic-bezier(.4,0,.2,1);box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.switch input:checked + .slider{background:var(--accent);border-color:var(--accent)}
+.switch input:checked + .slider::before{transform:translateX(16px)}
+.switch input:focus-visible + .slider{outline:2px solid var(--accent);outline-offset:2px}
+.notice-select{background:var(--panel-2);border:1px solid var(--border);color:var(--ink-1);padding:6px 10px;border-radius:var(--r-sm);font-size:12.5px;font-family:var(--font);cursor:pointer}
+.notice-select:focus{outline:none;border-color:var(--accent)}
+.comp-status{font-size:10.5px;padding:1.5px 8px;border-radius:99px;font-weight:600;flex-shrink:0;font-family:var(--mono)}
+.comp-on{background:rgba(48,209,88,.13);color:var(--green)}
+.comp-off{background:var(--panel-2);color:var(--ink-3);border:1px solid var(--border)}
+.comp-head{display:flex;justify-content:space-between;align-items:center;padding:6px 0 10px}
+.comp-head .lbl{font-size:11px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── Add form ── */
+.formwrap{max-width:640px;margin:0 auto}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.fld input,.fld textarea,.fld select{width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--ink-1);padding:8px 11px;border-radius:var(--r-sm);font-size:12.5px;font-family:var(--font);transition:border-color .15s,box-shadow .15s}
+.fld input.mono{font-family:var(--mono)}
+.fld textarea{min-height:96px;resize:vertical;line-height:1.5}
+.fld input:focus,.fld textarea:focus,.fld select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.add-msg{font-size:12px;margin-top:10px}
+
+/* ── Modal ── */
+.modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:24px}
+.modal.show{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--border-2);border-radius:var(--r-lg);padding:24px;width:min(560px,100%);max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:fadeUp .18s ease-out both}
+.modal-box h2{font-size:15px;font-weight:650;margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translate(-50%,8px);background:var(--panel);border:1px solid var(--border-2);color:var(--ink-1);padding:9px 20px;border-radius:99px;font-size:12.5px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;z-index:200;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.error{border-color:rgba(255,69,58,.4);color:var(--red)}
+
+@media(max-width:1280px){.stats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1024px){.config-grid{grid-template-columns:1fr}}
+@media(max-width:768px){
+  .page{padding:0 16px 48px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .toolbar{flex-wrap:wrap}
+  .searchbox{max-width:none;width:100%}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="brand">
+    <h1 data-i18n="brand">三省引擎</h1>
+    <span class="sub">Canon · Mnemonic · Guard</span>
+    <span class="ver">v5.7.0</span>
+  </div>
+  <div class="head-right">
+    <span class="clock" id="clock"></span>
+    <button class="iconbtn" id="langBtn" onclick="switchLang()" data-i18n="lang">English</button>
+    <button class="iconbtn" id="themeBtn" onclick="toggleTheme()">亮色</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="rules" onclick="switchTab('rules')" data-i18n="tab_rules">规则库</button>
+  <button class="tab" data-tab="config" onclick="switchTab('config')" data-i18n="tab_config">引擎配置</button>
+  <button class="tab" data-tab="add" onclick="switchTab('add')" data-i18n="tab_add">添加规则</button>
+</nav>
+
+<!-- ═══ Rules ═══ -->
+<section class="tab-content active" id="tab-rules">
+  <div class="stats" id="stats"></div>
+
+  <div class="trend" id="trendCard" style="display:none">
+    <div class="t-head">
+      <span class="t-title" data-i18n="trend_title">近 30 天拦截趋势</span>
+      <span class="t-sub" id="trendSub"></span>
+    </div>
+    <div id="trendWrap"><canvas id="trendCanvas"></canvas></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="searchbox">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" id="search" oninput="renderRules()" data-i18n-ph="search_placeholder" placeholder="搜索规则 ID 或关键词…">
+    </div>
+    <select id="typeFilter" onchange="renderRules()">
+      <option value="" data-i18n="all_types">全部类型</option>
+      <option value="ban" data-i18n="ban_label">ban · 禁止项</option>
+      <option value="gap" data-i18n="gap_label">gap · 缺失项</option>
+      <option value="lazy" data-i18n="lazy_label">lazy · 偷懒项</option>
+      <option value="meta" data-i18n="meta_label">meta · 元规则</option>
+    </select>
+    <span class="count" id="rowCount"></span>
+    <span id="batchActions">
+      <button class="btn btn-sm" id="selectAllBtn" onclick="toggleSelectAllBtn()">全选</button>
+      <button class="btn btn-sm btn-danger" onclick="batchDelete()" data-i18n="batch_delete">批量删除</button>
+    </span>
+    <button class="btn btn-sm" onclick="exportRules()" data-i18n="export">导出</button>
+    <button class="btn btn-sm" id="batchToggle" onclick="toggleBatchMode()" data-i18n="batch">批量</button>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <colgroup>
+        <col style="width:44px"><col style="width:31%"><col style="width:8%"><col style="width:7%"><col style="width:9%"><col style="width:10%"><col>
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="cbcol"></th>
+          <th class="sortable" data-sort="id" data-i18n="col_id">规则 ID</th>
+          <th class="sortable" data-sort="type" data-i18n="col_type">类型</th>
+          <th class="sortable" data-sort="hit_count" style="text-align:left" data-i18n="col_hits">命中</th>
+          <th class="sortable" data-sort="false_rate" data-i18n="col_false">误报率</th>
+          <th class="sortable" data-sort="days_since" data-i18n="col_days">最后触发</th>
+          <th data-i18n="col_keywords">关键词</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ Config ═══ -->
+<section class="tab-content" id="tab-config">
+  <div class="config-grid">
+    <div class="card">
+      <h3 data-i18n="core_hooks">核心 Hook 开关</h3>
+      <div id="core-hooks"></div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="extra_hooks">扩展 Hook 开关</h3>
+      <div id="extra-hooks"></div>
+      <div class="save-row">
+        <span class="dirty" id="dirtyHint3" data-i18n="dirty_hint">有未保存的修改</span>
+        <button class="btn btn-primary btn-sm" id="saveBtn3" onclick="saveConfig()" disabled data-i18n="save_config">保存配置</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="companion_title">推荐配套 Skill</h3>
+      <div class="hook-row">
+        <span style="flex:1;min-width:0"><span data-i18n="task_rec_label">自动推荐配套工具</span><div class="desc" data-i18n="task_rec_desc">检测打包/写代码/调试等任务时自动建议 ralph-loop、TDD 等工具</div></span>
+        <label class="switch"><input type="checkbox" id="taskRecToggle" onchange="toggleTaskRec()"><span class="slider"></span></label>
+      </div>
+      <div class="comp-head">
+        <span class="lbl" data-i18n="skill_list_label">已安装 Skill 状态</span>
+        <button class="btn btn-sm" onclick="refreshCompanion()" data-i18n="refresh">重新扫描</button>
+      </div>
+      <div id="companion-list"></div>
+      <div class="save-row">
+        <span class="dirty" id="dirtyHint2" data-i18n="dirty_hint">有未保存的修改</span>
+        <button class="btn btn-primary btn-sm" id="saveBtn2" onclick="saveConfig()" disabled data-i18n="save_config">保存配置</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="intercept_notice">拦截通知</h3>
+      <div style="padding:4px 0 2px">
+        <select class="notice-select" id="noticeMode" onchange="markDirty('notice')">
+          <option value="silent" data-i18n="notice_silent">silent · 静默替换</option>
+          <option value="visible" data-i18n="notice_visible">visible · 前置拦截说明</option>
+        </select>
+        <div class="desc" data-i18n="intercept_desc" style="font-size:11px;color:var(--ink-3);margin-top:8px">silent: 违规内容直接替换 · visible: 用户可见拦截详情</div>
+      </div>
+      <div class="save-row">
+        <span class="dirty" id="dirtyHint" data-i18n="dirty_hint">有未保存的修改</span>
+        <button class="btn btn-primary btn-sm" id="saveBtn" onclick="saveConfig()" disabled data-i18n="save_config">保存配置</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Add Rule ═══ -->
+<section class="tab-content" id="tab-add">
+  <div class="formwrap">
+    <div class="card">
+      <h3 data-i18n="add_rule">添加新规则</h3>
+      <div class="fld"><label data-i18n="add_type">规则类型</label>
+        <select id="newType">
+          <option value="ban" data-i18n="ban_label">ban · 禁止项</option>
+          <option value="gap" data-i18n="gap_label">gap · 缺失项</option>
+          <option value="lazy" data-i18n="lazy_label">lazy · 偷懒项</option>
+          <option value="meta" data-i18n="meta_label">meta · 元规则</option>
+        </select></div>
+      <div class="fld"><label data-i18n="add_id">规则 ID</label>
+        <input id="newId" type="text" class="mono" data-i18n-ph="add_id_ph" placeholder="rule_xxx（英文+下划线）"></div>
+      <div class="fld"><label data-i18n="add_keywords">关键词（逗号分隔）</label>
+        <input id="newKeywords" type="text" data-i18n-ph="modal_kw_ph" placeholder="关键词1, 关键词2, 关键词3"></div>
+      <div class="fld"><label data-i18n="add_desc">规则描述</label>
+        <textarea id="newDesc" data-i18n-ph="modal_desc_ph" placeholder="描述这条规则禁止/要求什么行为…"></textarea></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-primary" onclick="addRule()" data-i18n="add_btn">添加规则</button>
+        <span class="add-msg" id="addMsg"></span>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ═══ Edit Modal ═══ -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <h2 id="modalTitle" data-i18n="edit_title">编辑规则</h2>
+    <div class="fld"><label data-i18n="modal_id">规则 ID</label><input id="modalId" class="mono" disabled style="opacity:.6"></div>
+    <div class="fld"><label data-i18n="add_type">规则类型</label>
+      <select id="modalType" style="width:100%">
+        <option value="ban" data-i18n="ban_label">ban · 禁止项</option>
+        <option value="gap" data-i18n="gap_label">gap · 缺失项</option>
+        <option value="lazy" data-i18n="lazy_label">lazy · 偷懒项</option>
+        <option value="meta" data-i18n="meta_label">meta · 元规则</option>
+      </select></div>
+    <div class="fld"><label data-i18n="modal_keywords">关键词（逗号分隔）</label>
+      <input id="modalKeywords" data-i18n-ph="modal_kw_ph" placeholder="关键词1, 关键词2, 关键词3"></div>
+    <div class="fld"><label data-i18n="modal_desc">规则描述</label>
+      <textarea id="modalDesc" data-i18n-ph="modal_desc_ph" placeholder="描述这条规则禁止/要求什么行为…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()" data-i18n="cancel">取消</button>
+      <button class="btn btn-primary" onclick="saveEdit()" data-i18n="save">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══ State ═══ */
+var rulesData = [], configData = {}, origHooks = {}, origTaskRec = true, origNotice = 'silent';
+var taskRecEnabled = true, companionData = [], sortKey = 'hit_count', sortDir = -1;
+var currentLang = localStorage.getItem('dashboard-lang') || 'zh';
+var batchMode = false, selectedIds = {}, selectAllOn = false, editingRuleId = null;
+var trendData = null;
+
+function el(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function falseRate(r){return r.hit_count ? (r.false_positives/r.hit_count*100).toFixed(1) : '0.0'}
+
+/* ═══ i18n ═══ */
+var I18N = {
+zh:{
+  brand:'三省引擎', lang:'English', tab_rules:'规则库', tab_config:'引擎配置', tab_add:'添加规则',
+  trend_title:'近 30 天拦截趋势', trend_empty:'近 30 天暂无拦截记录',
+  search_placeholder:'搜索规则 ID 或关键词…', all_types:'全部类型',
+  ban_label:'ban · 禁止项', gap_label:'gap · 缺失项', lazy_label:'lazy · 偷懒项', meta_label:'meta · 元规则',
+  type_ban:'禁止', type_gap:'缺失', type_lazy:'偷懒', type_meta:'元规则',
+  stats_total:'规则总数', stats_hits:'累计命中', stats_intercept:'系统拦截',
+  stats_errors:'错误记录', stats_high_fp:'高误报', stats_stale:'长期未触发',
+  stats_hits_sub:'规则触发总次数', stats_intercept_sub:'intercept_log 行数',
+  stats_errors_sub:'errors.jsonl', stats_high_fp_sub:'误报率 >30%', stats_stale_sub:'>180 天',
+  col_id:'规则 ID', col_type:'类型', col_hits:'命中', col_false:'误报率', col_days:'最后触发', col_keywords:'关键词',
+  core_hooks:'核心 Hook 开关', extra_hooks:'扩展 Hook 开关',
+  task_rec_label:'自动推荐配套工具', task_rec_desc:'检测打包/写代码/调试等任务时自动建议 ralph-loop、TDD 等工具',
+  companion_title:'推荐配套 Skill', skill_list_label:'已安装 Skill 状态', refresh:'重新扫描',
+  intercept_notice:'拦截通知', notice_silent:'silent · 静默替换', notice_visible:'visible · 前置拦截说明',
+  intercept_desc:'silent: 违规内容直接替换 · visible: 用户可见拦截详情',
+  save_config:'保存配置', dirty_hint:'有未保存的修改',
+  add_rule:'添加新规则', add_type:'规则类型', add_id:'规则 ID', add_keywords:'关键词（逗号分隔）',
+  add_desc:'规则描述', add_btn:'添加规则', add_id_ph:'rule_xxx（英文+下划线）',
+  modal_id:'规则 ID', modal_keywords:'关键词（逗号分隔）', modal_desc:'规则描述',
+  cancel:'取消', save:'保存', edit_title:'编辑规则', edit_btn:'编辑',
+  detail_date:'创建日期', detail_last:'最后触发', detail_fp:'误报', detail_source:'来源',
+  export:'导出', batch:'批量', batch_delete:'批量删除', select_all:'全选', sel_n:'已选',
+  delete_title:'删除规则', rule_deleted:'已删除', rule_updated:'已更新', save_failed:'保存失败',
+  delete_failed:'删除失败', update_failed:'更新失败', net_error:'网络错误', unknown:'未知',
+  add_failed:'添加失败', add_success:'规则已添加', add_prompt:'请填写规则 ID 和关键词',
+  config_saved:'配置已保存（重启 Hermes 生效）', row_unit:'条',
+  confirm_delete:'确定删除这条规则？', confirm_batch:'条规则将被删除，不可恢复。继续？',
+  theme_to_light:'亮色', theme_to_dark:'暗色'
+},
+en:{
+  brand:'Canon-Mnemonic-Guard', lang:'中文', tab_rules:'Rules', tab_config:'Config', tab_add:'Add Rule',
+  trend_title:'30-day intercept trend', trend_empty:'No intercepts in the last 30 days',
+  search_placeholder:'Search rule ID or keywords…', all_types:'All Types',
+  ban_label:'ban · Prohibited', gap_label:'gap · Missing', lazy_label:'lazy · Lazy', meta_label:'meta · Meta',
+  type_ban:'Prohibited', type_gap:'Missing', type_lazy:'Lazy', type_meta:'Meta',
+  stats_total:'Total Rules', stats_hits:'Total Hits', stats_intercept:'Intercepts',
+  stats_errors:'Error Records', stats_high_fp:'High False Pos.', stats_stale:'Stale (>180d)',
+  stats_hits_sub:'rule trigger count', stats_intercept_sub:'intercept_log lines',
+  stats_errors_sub:'errors.jsonl', stats_high_fp_sub:'false rate >30%', stats_stale_sub:'>180 days',
+  col_id:'Rule ID', col_type:'Type', col_hits:'Hits', col_false:'False Rate', col_days:'Last Hit', col_keywords:'Keywords',
+  core_hooks:'Core Hooks', extra_hooks:'Extended Hooks',
+  task_rec_label:'Auto-recommend tools', task_rec_desc:'Suggest ralph-loop, TDD etc. on build/code/debug tasks',
+  companion_title:'Companion Skills', skill_list_label:'Installed Skills', refresh:'Rescan',
+  intercept_notice:'Intercept Notice', notice_silent:'silent · Silent Replace', notice_visible:'visible · Show Detail',
+  intercept_desc:'silent: replace offending content · visible: user sees intercept detail',
+  save_config:'Save Config', dirty_hint:'Unsaved changes',
+  add_rule:'Add New Rule', add_type:'Rule Type', add_id:'Rule ID', add_keywords:'Keywords (comma-separated)',
+  add_desc:'Description', add_btn:'Add Rule', add_id_ph:'rule_xxx (letters+underscore)',
+  modal_id:'Rule ID', modal_keywords:'Keywords (comma-separated)', modal_desc:'Description',
+  cancel:'Cancel', save:'Save', edit_title:'Edit Rule', edit_btn:'Edit',
+  detail_date:'Created', detail_last:'Last Hit', detail_fp:'False Pos.', detail_source:'Source',
+  export:'Export', batch:'Batch', batch_delete:'Delete selected', select_all:'Select all', sel_n:'Sel ',
+  delete_title:'Delete Rule', rule_deleted:'deleted', rule_updated:'updated', save_failed:'Save failed',
+  delete_failed:'Delete failed', update_failed:'Update failed', net_error:'Network error', unknown:'unknown',
+  add_failed:'Add failed', add_success:'Rule added', add_prompt:'Please fill rule ID and keywords',
+  config_saved:'Config saved (restart Hermes to apply)', row_unit:'rules',
+  confirm_delete:'Delete this rule?', confirm_batch:'rules will be deleted permanently. Continue?',
+  theme_to_light:'Light', theme_to_dark:'Dark'
+}};
+function t(k){return (I18N[currentLang]||I18N.zh)[k]||k}
+
+/* ═══ Theme ═══ */
+function toggleTheme(){
+  var cur = document.body.getAttribute('data-theme')||'dark';
+  var nxt = cur==='dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', nxt);
+  try{ localStorage.setItem('dashboard-theme', nxt); }catch(e){}
+  updateThemeBtn(); renderTrend();
+}
+function updateThemeBtn(){
+  var dark = (document.body.getAttribute('data-theme')||'dark')==='dark';
+  el('themeBtn').textContent = dark ? t('theme_to_light') : t('theme_to_dark');
+}
+function loadTheme(){
+  var saved = null;
+  try{ saved = localStorage.getItem('dashboard-theme'); }catch(e){}
+  var theme = saved || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+  document.body.setAttribute('data-theme', theme);
+}
+
+/* ═══ Lang ═══ */
+function switchLang(){ currentLang = currentLang==='zh' ? 'en' : 'zh'; applyLang(); }
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(function(e){ e.textContent = t(e.getAttribute('data-i18n')) });
+  document.querySelectorAll('[data-i18n-ph]').forEach(function(e){ e.placeholder = t(e.getAttribute('data-i18n-ph')) });
+  document.title = (currentLang==='zh' ? '三省引擎' : 'Canon-Mnemonic-Guard') + ' · Dashboard';
+  el('langBtn').textContent = t('lang');
+  updateThemeBtn();
+  // type filter options
+  var tf = el('typeFilter');
+  if (tf){ ['all_types','ban_label','gap_label','lazy_label','meta_label'].forEach(function(k,i){ if(tf.options[i]) tf.options[i].textContent = t(k) }); }
+  var nt = el('newType');
+  if (nt){ ['ban_label','gap_label','lazy_label','meta_label'].forEach(function(k,i){ if(nt.options[i]) nt.options[i].textContent = t(k) }); }
+  var mt = el('modalType');
+  if (mt){ ['ban_label','gap_label','lazy_label','meta_label'].forEach(function(k,i){ if(mt.options[i]) mt.options[i].textContent = t(k) }); }
+  el('selectAllBtn').textContent = selectAllOn ? (currentLang==='en' ? 'Unselect' : '取消全选') : t('select_all');
+  updateBatchCount();
+  renderStats(); renderRules(); renderCompanion();
+  try{ localStorage.setItem('dashboard-lang', currentLang); }catch(e){}
+}
+
+/* ═══ Tabs ═══ */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===name) });
+  document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.toggle('active', c.id==='tab-'+name) });
+  if (name==='config'){ renderConfig(); renderCompanion(); }
+}
+function initHashTab(){
+  var m = (location.hash + location.search).match(/tab=(\w+)/);
+  if (m) switchTab(m[1]);
+}
+
+/* ═══ Stats ═══ */
+function renderStats(s){
+  s = s || window.__stats || {};
+  var ban = rulesData.filter(function(r){return r.type==='ban'}).length;
+  var gap = rulesData.filter(function(r){return r.type==='gap'}).length;
+  var lazy = rulesData.filter(function(r){return r.type==='lazy'}).length;
+  var meta = rulesData.filter(function(r){return r.type==='meta'}).length;
+  var hits = rulesData.reduce(function(a,r){return a+(r.hit_count||0)},0);
+  var hf = rulesData.filter(function(r){return parseFloat(falseRate(r))>30}).length;
+  var stale = rulesData.filter(function(r){return r.days_since!=null && r.days_since>180}).length;
+  var metaLine = meta ? ' · '+t('type_meta')+' '+meta : '';
+  el('stats').innerHTML =
+    '<div class="stat"><div class="k">'+t('stats_total')+'</div><div class="v">'+rulesData.length+'</div><div class="s">'+t('type_ban')+' '+ban+' · '+t('type_gap')+' '+gap+' · '+t('type_lazy')+' '+lazy+metaLine+'</div></div>'+
+    '<div class="stat"><div class="k">'+t('stats_hits')+'</div><div class="v">'+hits+'</div><div class="s">'+t('stats_hits_sub')+'</div></div>'+
+    '<div class="stat"><div class="k">'+t('stats_intercept')+'</div><div class="v">'+(s.intercept_count||0)+'</div><div class="s">'+t('stats_intercept_sub')+'</div></div>'+
+    '<div class="stat"><div class="k">'+t('stats_errors')+'</div><div class="v">'+(s.error_count||0)+'</div><div class="s">'+t('stats_errors_sub')+'</div></div>'+
+    '<div class="stat"><div class="k">'+t('stats_high_fp')+'</div><div class="v'+(hf>0?' alert':'')+'">'+hf+'</div><div class="s">'+t('stats_high_fp_sub')+'</div></div>'+
+    '<div class="stat"><div class="k">'+t('stats_stale')+'</div><div class="v'+(stale>0?' warnc':'')+'">'+stale+'</div><div class="s">'+t('stats_stale_sub')+'</div></div>';
+}
+
+/* ═══ Trend ═══ */
+function renderTrend(){
+  var d = trendData; if (!d || !d.counts || !d.counts.length) return;
+  var card = el('trendCard'); card.style.display = '';
+  var sub = el('trendSub');
+  var total = d.counts.reduce(function(a,c){return a+c},0);
+  if (sub) sub.textContent = total + ' total';
+  var wrapEl = el('trendWrap');
+  if (d.counts.every(function(c){return !c})){
+    wrapEl.innerHTML = '<div class="t-empty">'+t('trend_empty')+'</div>';
+    return;
+  }
+  if (!el('trendCanvas')) wrapEl.innerHTML = '<canvas id="trendCanvas"></canvas>';
+  var cv = el('trendCanvas');
+  var w = wrapEl.clientWidth, h = 110, dpr = window.devicePixelRatio || 1;
+  cv.width = w*dpr; cv.height = h*dpr; cv.style.width = w+'px'; cv.style.height = h+'px';
+  var ctx = cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.clearRect(0,0,w,h);
+  var dark = (document.body.getAttribute('data-theme')||'dark')==='dark';
+  var maxVal = Math.max.apply(null, d.counts) || 1;
+  var padL = 30, padB = 18;
+  var plotW = w - padL - 8, plotH = h - padB - 8;
+  // grid
+  ctx.strokeStyle = dark ? 'rgba(255,255,255,.08)' : 'rgba(32,28,18,.10)';
+  ctx.lineWidth = 1;
+  [0, .5, 1].forEach(function(f){
+    var y = 8 + plotH*(1-f);
+    ctx.beginPath(); ctx.moveTo(padL, y+.5); ctx.lineTo(w-8, y+.5); ctx.stroke();
+    ctx.fillStyle = dark ? '#72727A' : '#918E85'; ctx.font = '9px ui-monospace,monospace';
+    ctx.textAlign = 'right'; ctx.fillText(String(Math.round(maxVal*f)), padL-6, y+3);
+  });
+  // bars
+  var n = d.counts.length;
+  var slot = plotW / n, barW = Math.max(3, slot - 4);
+  var accent = dark ? '#3B82F6' : '#2563EB';
+  var empty = dark ? 'rgba(255,255,255,.07)' : 'rgba(32,28,18,.07)';
+  d.counts.forEach(function(c, i){
+    var bh = Math.max(2, (c/maxVal)*plotH);
+    var x = padL + i*slot + (slot-barW)/2;
+    ctx.fillStyle = c>0 ? accent : empty;
+    var r = Math.min(2, barW/2);
+    ctx.beginPath();
+    ctx.moveTo(x, 8+plotH);
+    ctx.lineTo(x, 8+plotH-bh+r);
+    ctx.quadraticCurveTo(x, 8+plotH-bh, x+r, 8+plotH-bh);
+    ctx.lineTo(x+barW-r, 8+plotH-bh);
+    ctx.quadraticCurveTo(x+barW, 8+plotH-bh, x+barW, 8+plotH-bh+r);
+    ctx.lineTo(x+barW, 8+plotH);
+    ctx.closePath(); ctx.fill();
+    if (i % 5 === 0){
+      ctx.fillStyle = dark ? '#72727A' : '#918E85'; ctx.font = '9px ui-monospace,monospace'; ctx.textAlign = 'center';
+      ctx.fillText('-'+d.days[i]+'d', x+barW/2, h-4);
+    }
+  });
+}
+
+/* ═══ Rules table ═══ */
+function daysLabel(r){
+  if (r.days_since === null || r.days_since === undefined) return '<span>—</span>';
+  if (r.days_since > 180) return '<span class="stale">'+r.days_since+'d</span>';
+  return '<span>'+r.days_since+'d</span>';
+}
+function renderRules(){
+  var q = (el('search').value||'').toLowerCase();
+  var tf = el('typeFilter').value||'';
+  var rows = rulesData.filter(function(r){
+    if (tf && r.type!==tf) return false;
+    if (q && r.id.toLowerCase().indexOf(q)<0 && !(r.keywords||[]).some(function(k){return k && k.toLowerCase().indexOf(q)>=0})) return false;
+    return true;
+  });
+  rows.sort(function(a,b){
+    var va = a[sortKey], vb = b[sortKey];
+    if (sortKey==='days_since'){ va = va!=null?va:99999; vb = vb!=null?vb:99999; }
+    if (sortKey==='false_rate'){ va = parseFloat(falseRate(a)); vb = parseFloat(falseRate(b)); }
+    if (va < vb) return -sortDir; if (va > vb) return sortDir; return 0;
+  });
+  window._vrows = rows;
+  var h = '';
+  rows.forEach(function(r){
+    var fr = parseFloat(falseRate(r));
+    var kws = (r.keywords||[]);
+    var kwHtml = kws.slice(0,3).map(function(k){return '<span class="kw">'+esc(k)+'</span>'}).join('') + (kws.length>3 ? '<span class="kw">+'+(kws.length-3)+'</span>' : '');
+    h += '<tr class="clickable" id="row-'+esc(r.id)+'" data-rid="'+esc(r.id)+'" onclick="toggleDetail(this.dataset.rid)">'+
+      '<td class="cbcol">'+
+        '<button class="del-inline" data-rid="'+esc(r.id)+'" onclick="event.stopPropagation();deleteRule(this.dataset.rid)" title="'+t('delete_title')+'">✕</button>'+
+        '<input type="checkbox" class="row-cb" data-rid="'+esc(r.id)+'" onclick="event.stopPropagation();toggleRowCb(this)"'+(selectedIds[r.id]?' checked':'')+'>'+
+      '</td>'+
+      '<td class="id" title="'+esc(r.id)+'">'+esc(r.id)+'</td>'+
+      '<td><span class="type-badge type-'+esc(r.type)+'">'+esc(r.type)+'</span></td>'+
+      '<td class="n">'+(r.hit_count||0)+'</td>'+
+      '<td class="n'+(fr>30?' hot':'')+'">'+falseRate(r)+'%</td>'+
+      '<td class="dim">'+daysLabel(r)+'</td>'+
+      '<td class="kwcell" title="'+esc(kws.join(' · '))+'">'+kwHtml+'</td>'+
+      '<td class="row-acts"><button class="btn btn-sm" onclick="event.stopPropagation();openEditModal(this.closest(\'tr\').previousElementSibling.dataset.rid)">'+t('edit_btn')+'</button></td>'+
+    '</tr>'+
+    '<tr class="detail-row" id="detail-'+esc(r.id)+'"><td colspan="8">'+
+      '<span class="dl">'+t('detail_date')+'</span> '+esc(r.date||'—')+' &nbsp;·&nbsp; '+
+      '<span class="dl">'+t('detail_last')+'</span> '+esc(r.last_triggered||'—')+' &nbsp;·&nbsp; '+
+      '<span class="dl">'+t('detail_fp')+'</span> '+r.false_positives+'/'+r.hit_count+' &nbsp;·&nbsp; '+
+      '<span class="dl">'+t('detail_source')+'</span> '+esc(r.source||'—')+
+    '</td></tr>';
+  });
+  if (!rows.length) h = '<tr><td colspan="8"><div class="empty" style="padding:48px 0;text-align:center;color:var(--ink-3)">'+t('no_results')+'</div></td></tr>';
+  el('tbody').innerHTML = h;
+  el('rowCount').textContent = rows.length + ' / ' + rulesData.length + ' ' + t('row_unit');
+}
+function sortRules(key){
+  if (sortKey===key) sortDir *= -1; else { sortKey = key; sortDir = -1; }
+  document.querySelectorAll('th').forEach(function(th){ th.classList.remove('sort-asc','sort-desc') });
+  var th = document.querySelector('th[data-sort="'+key+'"]');
+  if (th) th.classList.add(sortDir===1?'sort-asc':'sort-desc');
+  renderRules();
+}
+function toggleDetail(id){
+  var d = el('detail-'+id);
+  if (d) d.classList.toggle('open');
+}
+
+/* ═══ Config ═══ */
+function renderConfig(){
+  if (!configData.hooks) return;
+  var coreHooks = ['pre_tool_call','pre_llm_call','post_llm_call','transform_llm_output'];
+  var coreHtml = '', extraHtml = '';
+  Object.keys(configData.hooks).forEach(function(h){
+    var row = '<div class="hook-row"><span class="name">'+esc(h)+'</span>'+
+      '<label class="switch"><input type="checkbox" data-hook="'+esc(h)+'"'+(configData.hooks[h]?' checked':'')+' onchange="toggleHook(this.dataset.hook, this.checked)"><span class="slider"></span></label></div>';
+    if (coreHooks.indexOf(h) >= 0) coreHtml += row; else extraHtml += row;
+  });
+  el('core-hooks').innerHTML = coreHtml || '<div style="color:var(--ink-3);font-size:12px">—</div>';
+  el('extra-hooks').innerHTML = extraHtml || '<div style="color:var(--ink-3);font-size:12px">—</div>';
+  var nm = el('noticeMode');
+  if (nm) nm.value = configData.intercept_notice || 'silent';
+  taskRecEnabled = configData.task_recommendations !== false;
+  var tg = el('taskRecToggle');
+  if (tg) tg.checked = taskRecEnabled;
+  if (Object.keys(origHooks).length === 0){
+    origHooks = JSON.parse(JSON.stringify(configData.hooks));
+    origTaskRec = taskRecEnabled;
+    origNotice = configData.intercept_notice || 'silent';
+  }
+}
+function toggleHook(name, checked){
+  configData.hooks[name] = checked;
+  markDirty('hooks');
+}
+function toggleTaskRec(){
+  taskRecEnabled = el('taskRecToggle').checked;
+  configData.task_recommendations = taskRecEnabled;
+  markDirty('taskrec');
+}
+function markDirty(module){
+  if (module!=='notice') configData.intercept_notice = origNotice;
+  if (module!=='taskrec') configData.task_recommendations = origTaskRec;
+  if (module!=='hooks') configData.hooks = JSON.parse(JSON.stringify(origHooks));
+  if (module==='notice') configData.intercept_notice = el('noticeMode').value;
+  if (module==='taskrec') configData.task_recommendations = taskRecEnabled;
+  var hooksChanged = JSON.stringify(configData.hooks) !== JSON.stringify(origHooks);
+  var noticeChanged = configData.intercept_notice !== origNotice;
+  var taskRecChanged = configData.task_recommendations !== origTaskRec;
+  el('saveBtn').disabled = !noticeChanged;
+  el('saveBtn2').disabled = !taskRecChanged;
+  el('saveBtn3').disabled = !hooksChanged;
+  el('dirtyHint').classList.toggle('show', noticeChanged);
+  el('dirtyHint2').classList.toggle('show', taskRecChanged);
+  el('dirtyHint3').classList.toggle('show', hooksChanged);
+}
+function saveConfig(){
+  var payload = {};
+  var hooksChanged = JSON.stringify(configData.hooks) !== JSON.stringify(origHooks);
+  var noticeChanged = configData.intercept_notice !== origNotice;
+  var taskRecChanged = configData.task_recommendations !== origTaskRec;
+  if (hooksChanged) payload.hooks = configData.hooks;
+  if (noticeChanged) payload.intercept_notice = configData.intercept_notice;
+  if (taskRecChanged) payload.task_recommendations = configData.task_recommendations;
+  fetch('/api/config',{method:'POST',body:JSON.stringify(payload)})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if (d.ok){
+        origHooks = JSON.parse(JSON.stringify(configData.hooks));
+        origNotice = configData.intercept_notice;
+        origTaskRec = configData.task_recommendations;
+        markDirty('none');
+        toast(t('config_saved'),'success');
+      } else { toast(t('save_failed')+': '+(d.error||t('unknown')),'error'); }
+    })
+    .catch(function(e){ toast(t('net_error')+': '+e.message,'error'); });
+}
+function renderCompanion(){
+  var h = '';
+  companionData.forEach(function(s){
+    h += '<div class="hook-row">'+
+      '<span style="flex:1;min-width:0"><span style="font-size:12.5px;color:var(--ink-2)">'+esc(currentLang==='en'?s.name_en:s.name_zh)+'</span>'+
+      '<div class="desc">'+esc(currentLang==='en'?s.desc_en:s.desc_zh)+'</div></span>'+
+      '<span class="comp-status '+(s.installed?'comp-on':'comp-off')+'">'+(s.installed?'✓':'—')+'</span></div>';
+  });
+  el('companion-list').innerHTML = h || '<div style="color:var(--ink-3);font-size:12px;padding:6px 0">—</div>';
+}
+function refreshCompanion(){
+  fetch('/api/companion').then(function(r){return r.json()}).then(function(d){ companionData = d; renderCompanion(); });
+}
+
+/* ═══ Add rule ═══ */
+function addRule(){
+  var data = {
+    type: el('newType').value,
+    id: el('newId').value.trim(),
+    keywords: el('newKeywords').value.split(',').map(function(k){return k.trim()}).filter(Boolean),
+    description: el('newDesc').value.trim()
+  };
+  var msg = el('addMsg');
+  if (!data.id || !data.keywords.length){ msg.textContent = t('add_prompt'); msg.style.color = 'var(--amber)'; return; }
+  fetch('/api/rules',{method:'POST',body:JSON.stringify(data)})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if (d.ok){
+        msg.textContent = t('add_success')+': '+data.id; msg.style.color = 'var(--green)';
+        el('newId').value = ''; el('newKeywords').value = ''; el('newDesc').value = '';
+        fetch('/api/rules').then(function(r){return r.json()}).then(function(d2){ rulesData = d2; renderRules(); renderStats(); });
+      } else { msg.textContent = t('add_failed')+': '+(d.error||t('unknown')); msg.style.color = 'var(--red)'; }
+    })
+    .catch(function(e){ msg.textContent = t('net_error')+': '+e.message; msg.style.color = 'var(--red)'; });
+}
+
+/* ═══ Delete / edit ═══ */
+function deleteRule(id){
+  if (!confirm(t('confirm_delete')+'\n'+id)) return;
+  var row = el('row-'+id);
+  if (row){ row.style.transition = 'opacity .2s'; row.style.opacity = '0'; }
+  fetch('/api/rules',{method:'DELETE',body:JSON.stringify({id:id})})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if (d.ok){
+        rulesData = rulesData.filter(function(r){return r.id!==id});
+        delete selectedIds[id];
+        renderRules(); renderStats();
+        toast(t('rule_deleted')+': '+id,'success');
+      } else {
+        if (row){ row.style.opacity = '1'; }
+        toast(t('delete_failed')+': '+(d.error||t('unknown')),'error');
+      }
+    })
+    .catch(function(e){ if (row){ row.style.opacity = '1'; } toast(t('net_error')+': '+e.message,'error'); });
+}
+function openEditModal(id){
+  var r = rulesData.find(function(x){return x.id===id});
+  if (!r) return;
+  editingRuleId = id;
+  el('modalId').value = id;
+  el('modalType').value = r.type || 'ban';
+  el('modalKeywords').value = (r.keywords||[]).join(', ');
+  el('modalDesc').value = r.description || '';
+  el('editModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(){
+  el('editModal').classList.remove('show');
+  document.body.style.overflow = '';
+  editingRuleId = null;
+}
+function saveEdit(){
+  if (!editingRuleId) return;
+  var keywords = el('modalKeywords').value.split(',').map(function(k){return k.trim()}).filter(Boolean);
+  fetch('/api/rules',{method:'PUT',body:JSON.stringify({
+    id:editingRuleId, keywords:keywords, description:el('modalDesc').value.trim(), type:el('modalType').value
+  })})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if (d.ok){
+      var rid = editingRuleId;
+      closeModal();
+      fetch('/api/rules').then(function(r){return r.json()}).then(function(d2){ rulesData = d2; renderRules(); renderStats(); });
+      toast(t('rule_updated')+': '+rid,'success');
+    } else { toast(t('update_failed')+': '+(d.error||t('unknown')),'error'); }
+  })
+  .catch(function(e){ toast(t('net_error')+': '+e.message,'error'); });
+}
+
+/* ═══ Export / batch ═══ */
+function exportRules(){
+  var a = document.createElement('a');
+  a.href = '/api/rules/export'; a.download = 'cmg-rules-export.zip';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function toggleBatchMode(){
+  batchMode = !batchMode;
+  document.body.classList.toggle('batch', batchMode);
+  el('batchToggle').textContent = batchMode ? (currentLang==='en'?'Cancel':'取消') : t('batch');
+  el('batchActions').classList.toggle('on', batchMode);
+  if (!batchMode){ selectAllOn = false; selectedIds = {}; }
+  renderRules();
+}
+function toggleRowCb(cb){
+  var id = cb.dataset.rid;
+  if (cb.checked) selectedIds[id] = true; else delete selectedIds[id];
+  updateBatchCount();
+}
+function toggleSelectAllBtn(){
+  selectAllOn = !selectAllOn;
+  var list = window._vrows || rulesData;
+  if (selectAllOn){ list.forEach(function(r){ selectedIds[r.id] = true }); }
+  else { selectedIds = {}; }
+  el('selectAllBtn').textContent = selectAllOn ? (currentLang==='en'?'Unselect':'取消全选') : t('select_all');
+  renderRules();
+}
+function updateBatchCount(){
+  var n = Object.keys(selectedIds).length;
+  var btn = el('selectAllBtn');
+  if (n > 0) btn.textContent = t('sel_n') + n;
+}
+function batchDelete(){
+  var ids = Object.keys(selectedIds);
+  if (!ids.length) return;
+  if (!confirm(ids.length + ' ' + t('confirm_batch'))) return;
+  var done = 0;
+  ids.forEach(function(id){
+    fetch('/api/rules',{method:'DELETE',body:JSON.stringify({id:id})})
+      .then(function(r){return r.json()})
+      .then(function(){ done++; if (done===ids.length){
+        fetch('/api/rules').then(function(r){return r.json()}).then(function(d2){ rulesData = d2; selectedIds = {}; selectAllOn = false; renderRules(); renderStats(); toast(t('rule_deleted'),'success'); });
+      }});
+  });
+}
+
+/* ═══ Toast ═══ */
+var toastTimer = null;
+function toast(msg, type){
+  var el2 = el('toast');
+  el2.textContent = msg;
+  el2.className = 'toast show' + (type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el2.className = 'toast' }, 2500);
+}
+
+/* ═══ Init ═══ */
+function loadAll(){
+  loadTheme();
+  fetch('/api/rules').then(function(r){return r.json()}).then(function(d){
+    rulesData = Array.isArray(d) ? d : [];
+    renderStats();
+    renderRules();
+  });
+  fetch('/api/stats').then(function(r){return r.json()}).then(function(s){
+    window.__stats = s; renderStats(s);
+  });
+  fetch('/api/config').then(function(r){return r.json()}).then(function(d){
+    configData = d || {};
+    origHooks = JSON.parse(JSON.stringify(configData.hooks||{}));
+    origNotice = configData.intercept_notice || 'silent';
+    origTaskRec = configData.task_recommendations !== false;
+    renderConfig();
+  });
+  fetch('/api/companion').then(function(r){return r.json()}).then(function(d){
+    companionData = Array.isArray(d) ? d : [];
+    renderCompanion();
+  });
+  fetch('/api/trend').then(function(r){return r.json()}).then(function(d){
+    trendData = d; renderTrend();
+  }).catch(function(){});
+  applyLang();
+  initHashTab();
+  setInterval(function(){
+    el('clock').textContent = new Date().toLocaleTimeString(currentLang==='zh'?'zh-CN':'en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }, 1000);
+}
+el('editModal').addEventListener('click', function(e){ if (e.target === this) closeModal() });
+document.addEventListener('keydown', function(e){ if (e.key==='Escape') closeModal() });
+loadAll();
+</script>
+</body>
+</html>
