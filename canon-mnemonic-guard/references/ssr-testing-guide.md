@@ -124,6 +124,6 @@ grep 'B 层命中' ~/.hermes/logs/agent.log | tail -5
 | B 层命中不存在 skill | `grep 'B 层命中' agent.log` → 对比 skills_list | 向量匹配返回标签→需验证 skill 注册表；短期在 echo 中过滤无效命中 |
 | B 层超时 | `grep 'B 层' agent.log` | 检查 B 层 provider（main/ollama）是否可用 |
 | embedding 索引缺失 skill | `python3 test_ssr.py` 规则有效性项 | 重启 Hermes 触发 _sync_embeddings() |
-| Dashboard 不可达 | `curl localhost:8766` | 检查端口是否被占用、是否启动 |
+| Dashboard 不可达 | `curl localhost:8768` | 检查端口是否被占用、是否启动 |
 | GREEN 失败 | 对比期望命中 vs 实际 | 关键词路径失效→检查 a_rules.json；embedding 弱→关键词兜底可接受 |
 | SSR echo 为空或格式错 | 对比日志中的命中 vs 用户看到的输出 | 检查 echo 过滤逻辑 + 换行转义 |
